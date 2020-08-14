@@ -1,0 +1,141 @@
+{
+  "definitions": {},
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "AwsDataApiMetadataSchema",
+  "type": "object",
+  "title": "AWS Data API Metadata Schema",
+  "required": [
+    "api",
+    "CatalogDatabase",
+    "CrawlerRolename",
+    "DataType",
+    "DeleteMode",
+    "DeployedAccount",
+    "NonItemMasterWritesAllowed",
+    "PrimaryKey",
+    "Stage",
+    "StorageHandler",
+    "StrictOCCV",
+    "type"
+  ],
+  "properties": {
+    "api": {
+      "type": "string"
+    },
+    "CatalogDatabase": {
+      "type": "string"
+    },
+    "CrawlerRolename": {
+      "type": "string"
+    },
+    "DataType": {
+      "type": "string"
+    },
+    "DeleteMode": {
+      "type": "string",
+      "default": "label",
+      "examples": [
+        "tombstone","label"
+      ],
+      "pattern": "^(label|tombstone)$"
+    },
+    "DeployedAccount": {
+      "type": "string"
+    },
+    "NonItemMasterWritesAllowed": {
+      "type": "boolean",
+      "default": false
+    },
+    "PrimaryKey": {
+      "type": "string"
+    },
+    "SearchConfig": {
+      "type": "object",
+      "required": [
+        "DeliveryStreams",
+        "ElasticSearchDomain"
+      ],
+      "properties": {
+        "DeliveryStreams": {
+          "type": "object",
+          "required": [
+            "Metadata",
+            "Resource"
+          ],
+          "properties": {
+            "Metadata": {
+              "type": "object",
+              "required": [
+                "DestinationDeliveryStreamARN",
+                "SourceStreamARN"
+              ],
+              "properties": {
+                "DestinationDeliveryStreamARN": {
+                  "type": "string"
+                },
+                "SourceStreamARN": {
+                  "type": "string"
+                }
+              }
+            },
+            "Resource": {
+              "type": "object",
+              "required": [
+                "DestinationDeliveryStreamARN",
+                "SourceStreamARN"
+              ],
+              "properties": {
+                "DestinationDeliveryStreamARN": {
+                  "type": "string"
+                },
+                "SourceStreamARN": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "ElasticSearchDomain": {
+          "type": "object",
+          "required": [
+            "ARN",
+            "DomainId",
+            "ElasticSearchEndpoint"
+          ],
+          "properties": {
+            "ARN": {
+              "type": "string"
+            },
+            "DomainId": {
+              "type": "string"
+            },
+            "ElasticSearchEndpoint": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "ElasticSearchDomain": {
+      "type": "string"
+    },
+    "FailedSearchIndexRecordBucket": {
+      "type": "string"
+    },
+    "FirehoseDeliveryIamRoleARN": {
+      "type": "string"
+    },
+    "Stage": {
+      "type": "string"
+    },
+    "StorageHandler": {
+      "type": "string"
+    },
+    "StrictOCCV": {
+      "type": "boolean"
+    },
+    "type": {
+      "type": "string"
+    }
+  }
+}

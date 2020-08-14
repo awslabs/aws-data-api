@@ -1,0 +1,14 @@
+{
+  "AllowAllCORS": "True",
+  "Chalice": {
+    "allow_origin": "https://foo.example.com",
+    "allow_headers": [
+      "X-Special-Header"
+    ],
+    "max_age": 600,
+    "expose_headers": [
+      "X-Special-Header"
+    ],
+    "allow_credentials": "True"
+  }
+}

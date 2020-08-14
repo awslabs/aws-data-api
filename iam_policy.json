@@ -1,0 +1,115 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AwsDataAPI7",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:InvokeFunction"
+      ],
+      "Resource": [
+        "arn:aws:lambda:*:*:function:AwsDataAPI-dev-Understander",
+        "arn:aws:lambda:*:*:function:AwsDataAPI-test-Understander",
+        "arn:aws:lambda:*:*:function:AwsDataAPI-prod-Understander",
+        "arn:aws:lambda:*:*:function:AwsDataAPI-Understander",
+        "arn:aws:lambda:*:*:function:AwsDataAPI-dev-Provisioning",
+        "arn:aws:lambda:*:*:function:AwsDataAPI-test-Provisioning",
+        "arn:aws:lambda:*:*:function:AwsDataAPI-prod-Provisioning",
+        "arn:aws:lambda:*:*:function:AwsDataAPI-Provisioning"
+      ]
+    },
+    {
+      "Sid": "AwsDataAPI4",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:CreateTable",
+        "dynamodb:BatchGetItem",
+        "dynamodb:BatchWriteItem",
+        "dynamodb:ConditionCheckItem",
+        "dynamodb:PutItem",
+        "dynamodb:DescribeTable",
+        "dynamodb:DeleteTable",
+        "dynamodb:DeleteItem",
+        "dynamodb:GetItem",
+        "dynamodb:Scan",
+        "dynamodb:Query",
+        "dynamodb:UpdateItem",
+        "dynamodb:UpdateTable",
+        "dynamodb:UpdateContinuousBackups",
+        "dynamodb:CreateBackup",
+        "dynamodb:DescribeBackup"
+      ],
+      "Resource": "arn:aws:dynamodb:*:*:table/*"
+    },
+    {
+      "Sid": "AwsDataAPI5",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:GetShardIterator",
+        "dynamodb:Scan",
+        "dynamodb:Query",
+        "dynamodb:DescribeStream",
+        "dynamodb:GetRecords"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:*:*:table/*/index/*",
+        "arn:aws:dynamodb:*:*:table/*/stream/*"
+      ]
+    },
+    {
+      "Sid": "AwsDataAPI6",
+      "Effect": "Allow",
+      "Action": [
+        "apigateway:GET",
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "dynamodb:ListTables",
+        "dynamodb:ListStreams",
+        "ec2:CreateNetworkInterface",
+        "ec2:DetachNetworkInterface",
+        "ec2:DeleteNetworkInterfacePermission",
+        "ec2:DescribeNetworkInterfaces",
+        "ec2:CreateNetworkInterfacePermission",
+        "ec2:DescribeNetworkInterfaceAttribute",
+        "ec2:ResetNetworkInterfaceAttribute",
+        "ec2:ModifyNetworkInterfaceAttribute",
+        "ec2:DeleteNetworkInterface",
+        "ec2:AttachNetworkInterface",
+        "ec2:DescribeNetworkInterfacePermissions",
+        "es:DescribeElasticsearchDomain",
+        "es:DescribeElasticsearchDomainConfig",
+        "firehose:DescribeDeliveryStream",
+        "firehose:CreateDeliveryStream",
+        "firehose:PutRecordBatch",
+        "lambda:CreateEventSourceMapping",
+        "glue:Describe*",
+        "glue:CreateJob",
+        "glue:CreateSecurityConfiguration",
+        "glue:StartJobRun",
+        "glue:GetJobRun",
+        "glue:GetJobRuns",
+        "glue:GetCrawler",
+        "glue:StartCrawler",
+        "glue:StartCrawlerSchedule",
+        "glue:StopCrawler",
+        "glue:StopCrawlerSchedule",
+        "glue:UpdateCrawler",
+        "glue:CreateCrawler",
+        "s3:GetObject",
+        "s3:GetObjectTagging",
+        "iam:PassRole",
+        "textract:StartDocumentAnalysis",
+        "textract:GetDocumentAnalysis",
+        "comprehend:DetectEntities",
+        "comprehend:DetectDominantLanguage",
+        "comprehend:DetectSentiment",
+        "comprehend:DetectKeyPhrases",
+        "cloudwatch:PutMetricData"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+        
+        

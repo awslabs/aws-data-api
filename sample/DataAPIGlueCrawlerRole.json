@@ -1,0 +1,164 @@
+{
+  "Type": "AWS::IAM::Role",
+  "Properties": {
+    "RoleName": "DataAPICrawlerRole",
+    "Description": "Role allowing Data API Crawlers to read Data API Storage and create Glue Catalog Entries",
+    "AssumeRolePolicyDocument": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Principal": {
+            "Service": [
+              "glue.amazonaws.com"
+            ]
+          },
+          "Action": [
+            "sts:AssumeRole"
+          ]
+        }
+      ]
+    },
+    "Policies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+              "glue:GetResourcePolicy",
+              "glue:GetTags"
+            ],
+            "Resource": [
+              "arn:aws:glue:*:*:catalog/*",
+              "arn:aws:glue:*:*:devendpoint/*",
+              "arn:aws:glue:*:*:trigger/*",
+              "arn:aws:glue:*:*:workflow/*",
+              "arn:aws:glue:*:*:crawler/*",
+              "arn:aws:glue:*:*:job/*"
+            ]
+          },
+          {
+            "Sid": "VisualEditor1",
+            "Effect": "Allow",
+            "Action": [
+              "glue:BatchCreatePartition",
+              "glue:SearchTables",
+              "glue:GetCrawler",
+              "glue:GetDataCatalogEncryptionSettings",
+              "glue:GetPartitions",
+              "glue:GetTableVersions",
+              "glue:UpdateTable",
+              "glue:UpdateCrawler",
+              "glue:GetSecurityConfiguration",
+              "glue:GetJobRun",
+              "glue:StopCrawlerSchedule",
+              "glue:GetClassifier",
+              "glue:UpdateDatabase",
+              "glue:CreateTable",
+              "glue:GetJobs",
+              "glue:GetTables",
+              "glue:DeleteCrawler",
+              "glue:CreateCrawler",
+              "glue:GetMapping",
+              "glue:GetPartition",
+              "glue:StartCrawlerSchedule",
+              "glue:StartJobRun",
+              "glue:DeletePartition",
+              "glue:GetJob",
+              "glue:GetConnections",
+              "glue:CreateSecurityConfiguration",
+              "glue:GetCrawlers",
+              "glue:GetClassifiers",
+              "glue:BatchDeletePartition",
+              "glue:DeleteTableVersion",
+              "glue:StopCrawler",
+              "glue:GetCatalogImportStatus",
+              "glue:CreateJob",
+              "glue:ImportCatalogToGlue",
+              "glue:GetTableVersion",
+              "glue:GetConnection",
+              "glue:PutDataCatalogEncryptionSettings",
+              "glue:StartCrawler",
+              "glue:CreatePartition",
+              "glue:UpdateJob",
+              "glue:UpdatePartition",
+              "glue:GetSecurityConfigurations",
+              "glue:GetDatabases",
+              "glue:GetTable",
+              "glue:GetDatabase",
+              "glue:UpdateCrawlerSchedule",
+              "glue:BatchGetCrawlers",
+              "glue:UpdateConnection",
+              "glue:CreateDatabase",
+              "glue:ListCrawlers",
+              "glue:GetCrawlerMetrics",
+              "glue:GetJobRuns"
+            ],
+            "Resource": "*"
+          }
+        ]
+      },
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+              "dynamodb:BatchGetItem",
+              "dynamodb:DescribeTable",
+              "dynamodb:GetItem",
+              "dynamodb:Scan",
+              "dynamodb:Query"
+            ],
+            "Resource": "arn:aws:dynamodb:*:*:table/*"
+          },
+          {
+            "Sid": "VisualEditor1",
+            "Effect": "Allow",
+            "Action": [
+              "dynamodb:Scan",
+              "dynamodb:Query"
+            ],
+            "Resource": "arn:aws:dynamodb:*:*:table/*/index/*"
+          },
+          {
+            "Sid": "VisualEditor2",
+            "Effect": "Allow",
+            "Action": "dynamodb:ListTables",
+            "Resource": "*"
+          }
+        ]
+      },
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+              "logs:DescribeLogGroups",
+              "logs:DescribeLogStreams",
+              "logs:GetLogGroupFields"
+            ],
+            "Resource": "arn:aws:logs:*:*:log-group:*"
+          },
+          {
+            "Sid": "VisualEditor1",
+            "Effect": "Allow",
+            "Action": "logs:PutLogEvents",
+            "Resource": "arn:aws:logs:*:*:log-group:*:log-stream:*"
+          },
+          {
+            "Sid": "VisualEditor2",
+            "Effect": "Allow",
+            "Action": "logs:DescribeDestinations",
+            "Resource": "*"
+          }
+        ]
+      }
+    ]
+  }
+}
