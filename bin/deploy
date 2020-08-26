@@ -80,10 +80,10 @@ if args.stage_name.lower() != 'prod' or (args.stage_name.lower() == 'prod' and a
     config_doc["use_xray"] = True
 
 # generate the config.json file to .chalice
-export_template_to_file("bin/setup-config.pystache", ".chalice/config.json", config_doc,args.verbose)
+export_template_to_file("template/setup-config.pystache", ".chalice/config.json", config_doc,args.verbose)
 
 # generate the iam policy
-export_template_to_file("bin/iam_policy.pystache", "iam_policy.json", config_doc, args.verbose)
+export_template_to_file("template/iam_policy.pystache", "iam_policy.json", config_doc, args.verbose)
 
 if args.action == "deploy":
     print("Deploying Data API...")
