@@ -86,8 +86,3 @@ if args.action == "deploy":
         deploy_args = deploy_args + ['--stage', args.stage_name]
 
     subprocess.call(deploy_args)
-
-    # get the URL so we can resolve the API ID
-    url = subprocess.check_output(['chalice', 'url'])
-
-    api_id = str(url).split(".")[0].split("//")[1]
