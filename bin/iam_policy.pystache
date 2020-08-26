@@ -8,14 +8,8 @@
         "lambda:InvokeFunction"
       ],
       "Resource": [
-        "arn:aws:lambda:*:*:function:AwsDataAPI-dev-Understander",
-        "arn:aws:lambda:*:*:function:AwsDataAPI-test-Understander",
-        "arn:aws:lambda:*:*:function:AwsDataAPI-prod-Understander",
-        "arn:aws:lambda:*:*:function:AwsDataAPI-Understander",
-        "arn:aws:lambda:*:*:function:AwsDataAPI-dev-Provisioning",
-        "arn:aws:lambda:*:*:function:AwsDataAPI-test-Provisioning",
-        "arn:aws:lambda:*:*:function:AwsDataAPI-prod-Provisioning",
-        "arn:aws:lambda:*:*:function:AwsDataAPI-Provisioning"
+        "arn:aws:lambda:*:*:function:AwsDataAPI-{{stage_name}}-Understander",
+        "arn:aws:lambda:*:*:function:AwsDataAPI-{{stage_name}}-Provisioning"
       ]
     },
     {
@@ -111,5 +105,3 @@
     }
   ]
 }
-        
-        

@@ -23,6 +23,27 @@ def test_import(module, package=None, message=None):
         sys.exit(ERROR)
 
 
+def export_template_to_file(template_file, output_file, config_doc, verbose=False):
+    # import the template file
+    with open(template_file) as t:
+        template = t.read()
+
+    # create a renderer
+    renderer = pystache.Renderer()
+
+    rendered = renderer.render(template, config_doc)
+
+    with open(output_file, 'w') as out:
+        out.write(rendered)
+
+    out.close()
+
+    if verbose is True:
+        print(rendered)
+
+    print("Generated configuration to %s" % output_file)
+
+
 # test and import modules required for the creation of the configuration
 pystache = test_import('pystache')
 argparse = test_import('argparse')
@@ -58,24 +79,11 @@ config_doc["sgs"] = json.dumps(args.sgs.split(","))
 if args.stage_name.lower() != 'prod' or (args.stage_name.lower() == 'prod' and args.enable_xray is True):
     config_doc["use_xray"] = True
 
-# import the template file
-with open("bin/setup-config.pystache") as t:
-    template = t.read()
+# generate the config.json file to .chalice
+export_template_to_file("bin/setup-config.pystache", ".chalice/config.json", config_doc,args.verbose)
 
-# create the renderer
-renderer = pystache.Renderer()
-
-rendered = renderer.render(template, config_doc)
-
-with open(".chalice/config.json", 'w') as out:
-    out.write(rendered)
-
-out.close()
-
-if args.verbose:
-    print(rendered)
-
-print("Generated config.json to .chalice.")
+# generate the iam policy
+export_template_to_file("bin/iam_policy.pystache", "iam_policy.json", config_doc, args.verbose)
 
 if args.action == "deploy":
     print("Deploying Data API...")

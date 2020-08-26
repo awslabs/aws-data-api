@@ -1,5 +1,5 @@
 __pycache__
 .DS_Store
-.chalice/deployed
-.chalice/deployments
+.chalice
 .idea
+iam_policy.json

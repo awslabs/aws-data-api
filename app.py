@@ -131,6 +131,7 @@ def _add_api_defaults(api_metadata):
 def registry():
     return dapi.get_registry(REGION, STAGE)
 
+
 @app.route('/data-apis', methods=['GET'], authorizer=use_authorizer, cors=cors)
 @chalice_function
 def get_all():
@@ -218,7 +219,7 @@ def schema(api_name, schema_type):
     else:
         return {params.DATA_MODIFIED: True,
                 params.RESPONSE_BODY: api.put_schema(schema_type=schema_type,
-                                              schema=app.current_request.json_body)}
+                                                     schema=app.current_request.json_body)}
 
 
 # method to set an ItemMaster ID on an Item
