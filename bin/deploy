@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-
-ERROR = -1
-CHALICE_MISSING = 'AWS Chalice is not installed. Please install Chalice (https://chalice.readthedocs.io/en/latest) and try again'
-
 import importlib
 import sys
 import json
+import os
 
-sys.path.append(".chalice")
-sys.path.append("chalicelib")
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import chalicelib.utils as utils
+
+ERROR = -1
+CHALICE_MISSING = 'AWS Chalice is not installed. Please install Chalice (https://chalice.readthedocs.io/en/latest) and try again'
 
 
 def test_import(module, package=None, message=None):
@@ -23,27 +24,6 @@ def test_import(module, package=None, message=None):
         sys.exit(ERROR)
 
 
-def export_template_to_file(template_file, output_file, config_doc, verbose=False):
-    # import the template file
-    with open(template_file) as t:
-        template = t.read()
-
-    # create a renderer
-    renderer = pystache.Renderer()
-
-    rendered = renderer.render(template, config_doc)
-
-    with open(output_file, 'w') as out:
-        out.write(rendered)
-
-    out.close()
-
-    if verbose is True:
-        print(rendered)
-
-    print("Generated configuration to %s" % output_file)
-
-
 # test and import modules required for the creation of the configuration
 pystache = test_import('pystache')
 argparse = test_import('argparse')
@@ -54,7 +34,7 @@ test_import('chalice', 'Chalice', CHALICE_MISSING)
 
 parser = argparse.ArgumentParser(description='AWS Data API Setup')
 parser.add_argument('-subnets', required=True, help='Subnet ID\'s where your API will run (comma separated list)')
-parser.add_argument('-sgs', required=True,
+parser.add_argument('-sgs', '-security-groups', required=True, dest="sgs",
                     help='Security Group ID\'s that grant network access to your API (comma separated list )')
 parser.add_argument('-stage', required=True, dest='stage_name', help='Stage Name for Data API')
 parser.add_argument('-log-level', default="INFO", required=False, choices=['INFO', 'ERROR', 'WARN', 'DEBUG'],
@@ -79,11 +59,7 @@ config_doc["sgs"] = json.dumps(args.sgs.split(","))
 if args.stage_name.lower() != 'prod' or (args.stage_name.lower() == 'prod' and args.enable_xray is True):
     config_doc["use_xray"] = True
 
-# generate the config.json file to .chalice
-export_template_to_file("template/setup-config.pystache", ".chalice/config.json", config_doc,args.verbose)
-
-# generate the iam policy
-export_template_to_file("template/iam_policy.pystache", "iam_policy.json", config_doc, args.verbose)
+utils.generate_configuration_files(config_doc, args.verbose)
 
 if args.action == "deploy":
     print("Deploying Data API...")

@@ -4,6 +4,7 @@ import boto3
 import os
 import time
 import logging
+import pystache
 from distutils import util as _util
 from chalicelib.data_api_encoder import DataApiEncoder
 import chalicelib.glue_export_dynamo_table as export_utils
@@ -12,6 +13,35 @@ import chalicelib.parameters as params
 
 _sts_client = None
 _iam_client = None
+
+
+def generate_configuration_files(config_dict, verbose):
+    # generate the config.json file to .chalice
+    __export_template_to_file("template/setup-config.pystache", ".chalice/config.json", config_dict, verbose)
+
+    # generate the iam policy
+    __export_template_to_file("template/iam_policy.pystache", "iam_policy.json", config_dict, verbose)
+
+
+def __export_template_to_file(template_file, output_file, config_doc, verbose=False):
+    # import the template file
+    with open(template_file) as t:
+        template = t.read()
+
+    # create a renderer
+    renderer = pystache.Renderer()
+
+    rendered = renderer.render(template, config_doc)
+
+    with open(output_file, 'w') as out:
+        out.write(rendered)
+
+    out.close()
+
+    if verbose is True:
+        print(rendered)
+
+    print("Generated configuration to %s" % output_file)
 
 
 def identity_trace(f):
