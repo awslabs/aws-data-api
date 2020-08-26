@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+
+ERROR = -1
+CHALICE_MISSING = 'AWS Chalice is not installed. Please install Chalice (https://chalice.readthedocs.io/en/latest) and try again'
+
+import importlib
+import sys
+import json
+
+sys.path.append(".chalice")
+sys.path.append("chalicelib")
+
+
+def test_import(module, package=None, message=None):
+    try:
+        return importlib.import_module(module, package)
+    except:
+        if package is not None:
+            name = "%s.%s" % (package, module)
+        else:
+            name = module
+        print("Prerequisite Not Met - %s" % (name) if message is None else message)
+        sys.exit(ERROR)
+
+
+# test and import modules required for the creation of the configuration
+pystache = test_import('pystache')
+argparse = test_import('argparse')
+subprocess = test_import('subprocess')
+
+# test and import modules required to deploy
+test_import('chalice', 'Chalice', CHALICE_MISSING)
+
+parser = argparse.ArgumentParser(description='AWS Data API Setup')
+parser.add_argument('-subnets', required=True, help='Subnet ID\'s where your API will run (comma separated list)')
+parser.add_argument('-sgs', required=True,
+                    help='Security Group ID\'s that grant network access to your API (comma separated list )')
+parser.add_argument('-stage', required=True, dest='stage_name', help='Stage Name for Data API')
+parser.add_argument('-log-level', default="INFO", required=False, choices=['INFO', 'ERROR', 'WARN', 'DEBUG'],
+                    dest='log_level', help='Log Level (INFO)')
+parser.add_argument('-schema-refresh-default', default="100", required=False,
+                    dest='refresh_schema_hits', help='Schema Refresh Hitcount Default (100)')
+parser.add_argument('-enable-xray', default=False, required=False, type=bool,
+                    dest='enable_xray', help='Should AWS XRay always be enabled? Turned off for Prod Stages (False)')
+parser.add_argument('-action', default="deploy", required=False, choices=['prepare', 'deploy'], dest='action',
+                    help='Deploy Action (prepare | deploy)')
+parser.add_argument('-verbose', default="False", required=False, dest='verbose',
+                    help='Verbose Output (False)')
+
+# parse and convert args to dict
+args = parser.parse_args()
+config_doc = vars(args)
+
+# parse and pivot subnets and security groups
+config_doc["subnets"] = json.dumps(args.subnets.split(","))
+config_doc["sgs"] = json.dumps(args.sgs.split(","))
+
+if args.stage_name.lower() != 'prod' or (args.stage_name.lower() == 'prod' and args.enable_xray is True):
+    config_doc["use_xray"] = True
+
+# import the template file
+with open("bin/setup-config.pystache") as t:
+    template = t.read()
+
+# create the renderer
+renderer = pystache.Renderer()
+
+rendered = renderer.render(template, config_doc)
+
+with open(".chalice/config.json", 'w') as out:
+    out.write(rendered)
+
+out.close()
+
+if args.verbose:
+    print(rendered)
+
+print("Generated config.json to .chalice.")
+
+if args.action == "deploy":
+    print("Deploying Data API...")
+    deploy_args = ['chalice', 'deploy']
+
+    # don't add a --stage for production
+    if args.stage_name is not None and args.stage_name in ['dev', 'test']:
+        deploy_args = deploy_args + ['--stage', args.stage_name]
+
+    subprocess.call(deploy_args)
+
+    # get the URL so we can resolve the API ID
+    url = subprocess.check_output(['chalice', 'url'])
+
+    api_id = str(url).split(".")[0].split("//")[1]

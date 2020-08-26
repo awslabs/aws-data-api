@@ -1,0 +1,32 @@
+{
+  "version": "2.0",
+  "app_name": "AwsDataAPI",
+  "stages": {
+    "{{stage_name}}": {
+      "app_name": "AwsDataAPI-{{stage_name}}",
+      "api_gateway_stage": "{{stage_name}}",
+      "autogen_policy": false,
+      "iam_policy_file": "../iam_policy.json",
+      "lambda_timeout": 900,
+      "subnet_ids": {{{subnets}}},
+      "security_group_ids": {{{sgs}}},
+      "environment_variables": {
+        "STAGE": "{{stage_name}}",
+        "SCHEMA_VALIDATION_REFRESH_HITCOUNT": "{{refresh_schema_hits}}",
+        "LOG_LEVEL": "{{log_level}}"
+        {{#use_xray}}
+        ,"AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR"
+        ,"AWS_XRAY_TRACING_NAME": "AwsDataAPI-{{stage_name}}"
+        {{/use_xray}}
+      },
+      "lambda_functions": {
+        "AwsDataAPI-{{stage_name}}-Provisioning": {
+          "lambda_timeout": 300
+        },
+        "AwsDataAPI-{{stage_name}}-Understander": {
+          "lambda_timeout": 300
+        }
+      }
+    }
+  }
+}
