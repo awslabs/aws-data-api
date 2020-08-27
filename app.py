@@ -1,6 +1,7 @@
 # this file contains all of the Chalice routing logic to implement the AWS Data API as a REST JSON Endpoint using IAM
 # authentication. The Data API can also be accessed natively as a python library using aws_data_api.py
-from chalice import Chalice, CORSConfig, Response, IAMAuthorizer, CognitoUserPoolAuthorizer, BadRequestError, ConflictError, NotFoundError
+from chalice import Chalice, CORSConfig, Response, IAMAuthorizer, CognitoUserPoolAuthorizer, AuthResponse, \
+    BadRequestError, ConflictError, NotFoundError
 import http
 import os
 import boto3
@@ -22,6 +23,31 @@ REGION = os.getenv('AWS_REGION')
 # this environment variable comes from Chalice
 STAGE = os.getenv('STAGE')
 
+# create the Chalice App reference
+app_name = "%s-%s" % (params.AWS_DATA_API_SHORTNAME, STAGE)
+app = Chalice(app_name=app_name)
+
+
+# This is the authorizer that will be used when you set environment parameter SYSTEM_AUTHORIZER to 'Custom'. You can
+# put in whatever custom code you wish here
+@app.authorizer()
+def custom_auth(auth_request):
+    token = auth_request.token
+    # This is just for demo purposes as shown in the API Gateway docs.
+    # Normally you'd call an oauth provider, validate the
+    # jwt token, etc.
+    # In this exampe, the token is treated as the status for demo
+    # purposes.
+    if token == 'allow':
+        return AuthResponse(routes=['/'], principal_id='user')
+    else:
+        # By specifying an empty list of routes,
+        # we're saying this user is not authorized
+        # for any URLs, which will result in an
+        # Unauthorized response.
+        return AuthResponse(routes=[], principal_id='user')
+
+
 # setup authorisers for view methods
 iam_authorizer = IAMAuthorizer()
 cognito_authorizer = CognitoUserPoolAuthorizer()
@@ -32,14 +58,9 @@ if set_authorizer == params.AUTHORIZER_IAM:
 elif set_authorizer == params.AUTHORIZER_COGNITO:
     use_authorizer = cognito_authorizer
 elif set_authorizer == params.AUTHORIZER_CUSTOM:
-    # TODO figure out how to dynamically load a custom authorizer here
-    pass
+    use_authorizer = custom_auth
 else:
     use_authorizer = None
-
-# create the Chalice App reference
-app_name = "%s-%s" % (params.AWS_DATA_API_SHORTNAME, STAGE)
-app = Chalice(app_name=app_name)
 
 # TODO Get rid of this
 dynamo_resource = boto3.resource('dynamodb', region_name=REGION)
