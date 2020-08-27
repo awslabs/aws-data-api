@@ -15,15 +15,36 @@ _sts_client = None
 _iam_client = None
 
 
-def generate_configuration_files(config_dict, verbose):
-    if config_dict["auth"] == params.AUTHORIZER_COGNITO:
-        if config_dict["cog_pool_name"] is not None and config_dict["cog_provider_arns"] is not None:
+def __precheck_config(config_dict):
+    # pre-check settings for the pystache template
+    if config_dict.get("stage_name").lower() != 'prod' or (
+            config_dict.get("stage_name").lower() == 'prod' and config_dict.get("enable_xray") is True):
+        config_dict["use_xray"] = True
+
+    if config_dict.get("auth") is not None:
+        config_dict["use_auth"] = True
+
+    if config_dict.get("cors_domain") is not None:
+        config_dict["custom_cors"] = True
+
+    if config_dict.get("auth") == params.AUTHORIZER_COGNITO:
+        if config_dict.get("cog_pool_name") is not None and config_dict.get("cog_provider_arns") is not None:
             config_dict["use_cognito"] = True
         else:
             raise Exception("Misconfigured Cognito Authorization. Requires User Pool name and Provider ARNS")
 
+    if config_dict.get("custom_domain_name") is not None:
+        config_dict["custom_domain"] = True
+
+    if config_dict.get("custom_url_prefix") is not None:
+        config_dict["use_custom_prefix"] = True
+
+
+def generate_configuration_files(config_dict, verbose):
+    __precheck_config(config_dict)
+
     # generate the config.json file to .chalice
-    __export_template_to_file("template/setup-config.pystache", ".chalice/config.json", config_dict, verbose)
+    __export_template_to_file("template/config.pystache", ".chalice/config.json", config_dict, verbose)
 
     # generate the iam policy
     __export_template_to_file("template/iam_policy.pystache", "iam_policy.json", config_dict, verbose)
@@ -31,6 +52,7 @@ def generate_configuration_files(config_dict, verbose):
     # generate the cors config
     if config_dict.get("allow_all_cors") is True or config_dict.get("cors_domain") is not None:
         __export_template_to_file("template/cors.pystache", "chalicelib/cors.json", config_dict, verbose)
+
 
 def __export_template_to_file(template_file, output_file, config_doc, verbose=False):
     # import the template file

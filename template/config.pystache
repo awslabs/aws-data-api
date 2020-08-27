@@ -5,6 +5,15 @@
     "{{stage_name}}": {
       "app_name": "AwsDataAPI-{{stage_name}}",
       "api_gateway_stage": "{{stage_name}}",
+      {{#custom_domain}}
+      "api_gateway_custom_domain": {
+        "domain_name": "{{custom_domain_name}}",
+        "certificate_arn": "{{acm_cert_arn}}"
+        {{#use_custom_prefix}}
+        ,"url_prefix": "{{custom_url_prefix}}"
+        {{/use_custom_prefix}}
+      }
+      {{/custom_domain}}
       "autogen_policy": false,
       "iam_policy_file": "../iam_policy.json",
       "lambda_timeout": 900,

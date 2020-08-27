@@ -45,14 +45,14 @@ parser.add_argument('-schema-refresh-default', default="100", required=False,
 parser.add_argument('-enable-xray', action='store_true',
                     dest='enable_xray', help='Should AWS XRay always be enabled? Turned off for Prod Stages (False)')
 parser.add_argument('-authorization', required=False, dest='auth', choices=['IAM', 'Cognito', 'Custom'])
-parser.add_argument('-cognito-user-pool', required=False, dest='cog_pool_name',
-                    help="If Cognito Authorization is to be used, the User Pool Name")
-parser.add_argument('-cognito-provider-arns', required=False, dest='cog_provider_arns',
-                    help="If Cognito Authorization is to be used, the list (as csv) of Provider ARNs")
+parser.add_argument('-cognito-details', required=False, dest='cognito_info',
+                    help="If Cognito Authorization is to be used, a CSV list of User Pool Name followed by one or more provider ARNs")
 parser.add_argument('-cors-domain', required=False, dest='cors_domain',
                     help="Domain name to allow requests from")
 parser.add_argument('-allow-all-cors', action='store_true', dest='allow_all_cors',
                     help="Allow requests from all Domains")
+parser.add_argument('-deploy-custom-domain', required=False, dest='custom_domain_info',
+                    help="Information for deploying to custom domains. CSV list of Domain Name, ACM Certificate ARN, URL Prefix (optional)")
 parser.add_argument('-action', default="deploy", required=False, choices=['prepare', 'deploy'], dest='action',
                     help='Deploy Action (prepare | deploy)')
 parser.add_argument('-verbose', action='store_true', dest='verbose',
@@ -66,14 +66,28 @@ config_doc = vars(args)
 config_doc["subnets"] = json.dumps(args.subnets.split(","))
 config_doc["sgs"] = json.dumps(args.sgs.split(","))
 
-if args.stage_name.lower() != 'prod' or (args.stage_name.lower() == 'prod' and args.enable_xray is True):
-    config_doc["use_xray"] = True
+# load cognito detail into config
+if args.auth == params.AUTHORIZER_COGNITO:
+    cognito_detail = args.cognito_info.split(',')
 
-if args.auth is not None:
-    config_doc["use_auth"] = True
+    if len(cognito_detail) < 2:
+        raise Exception("Cognito Details must include User Pool Name and on or more Provider ARNS")
+    else:
+        config_doc["cog_pool_name"] = cognito_detail[0]
+        config_doc["cog_provider_arns"] = ",".join(cognito_detail[1:])
 
-if args.cors_domain is not None:
-    config_doc["custom_cors"] = True
+# load custom domain information into the config
+if args.custom_domain_info is not None:
+    domain_info = args.custom_domain_info.split(',')
+
+    if len(domain_info) < 2:
+        raise Exception(
+            "Invalid Custom Domain Information. Format is Domain Name, ACM Certificate ARN, URL Prefix (optional)")
+    else:
+        config_doc["custom_domain_name"] = domain_info[0]
+        config_doc["acm_cert_arn"] = domain_info[1]
+        if len(domain_info) == 3:
+            config_doc["custom_url_prefix"] = domain_info[2]
 
 utils.generate_configuration_files(config_doc, args.verbose)
 
