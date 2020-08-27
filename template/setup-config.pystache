@@ -15,7 +15,11 @@
         "SCHEMA_VALIDATION_REFRESH_HITCOUNT": "{{refresh_schema_hits}}",
         "LOG_LEVEL": "{{log_level}}"
         {{#use_auth}}
-        ,"SYSTEM_AUTHORIZER" : "{{auth}}",
+        ,"SYSTEM_AUTHORIZER": "{{auth}}"
+        {{#use_cognito}}
+        ,"COGNITO_AUTHORIZER_USER_POOL": "{{cog_pool_name}}"
+        ,"COGNITO_AUTHORIZER_PROVIDER_ARNS": "{{cog_provider_arns}}"
+        {{/use_cognito}}
         {{/use_auth}}
         {{#use_xray}}
         ,"AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR"

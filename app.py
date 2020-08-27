@@ -34,10 +34,8 @@ app = Chalice(app_name=app_name)
 def custom_auth(auth_request):
     token = auth_request.token
     # This is just for demo purposes as shown in the API Gateway docs.
-    # Normally you'd call an oauth provider, validate the
-    # jwt token, etc.
-    # In this exampe, the token is treated as the status for demo
-    # purposes.
+    # Normally you'd call an oauth provider, validate the jwt token, etc.
+    # In this exampe, the token is treated as the status for demo purposes.
     if token == 'allow':
         return AuthResponse(routes=['/'], principal_id='user')
     else:
@@ -50,13 +48,20 @@ def custom_auth(auth_request):
 
 # setup authorisers for view methods
 iam_authorizer = IAMAuthorizer()
-cognito_authorizer = CognitoUserPoolAuthorizer()
 
 set_authorizer = os.getenv(params.AUTHORIZER_PARAM)
 if set_authorizer == params.AUTHORIZER_IAM:
     use_authorizer = iam_authorizer
 elif set_authorizer == params.AUTHORIZER_COGNITO:
-    use_authorizer = cognito_authorizer
+    # check that we have the required configuration to setup Cognito auth
+    cog_pool_name = os.getenv(params.COGNITO_POOL_NAME)
+    cog_provider_arns = os.getenv(params.COGNITO_PROVIDER_ARNS)
+
+    if cog_pool_name is not None and cog_provider_arns is not None:
+        cognito_authorizer = CognitoUserPoolAuthorizer(cog_pool_name, provider_arns=cog_provider_arns.split(','))
+    else:
+        print("Unable to configure Cognito Authorizer without %s and %s configuration items" % params.COGNITO_POOL_NAME,
+              params.COGNITO_PROVIDER_ARNS)
 elif set_authorizer == params.AUTHORIZER_CUSTOM:
     use_authorizer = custom_auth
 else:

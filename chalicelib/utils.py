@@ -16,6 +16,12 @@ _iam_client = None
 
 
 def generate_configuration_files(config_dict, verbose):
+    if config_dict["auth"] == params.AUTHORIZER_COGNITO:
+        if config_dict["cog_pool_name"] is not None and config_dict["cog_provider_arns"] is not None:
+            config_dict["use_cognito"] = True
+        else:
+            raise Exception("Misconfigured Cognito Authorization. Requires User Pool name and Provider ARNS")
+
     # generate the config.json file to .chalice
     __export_template_to_file("template/setup-config.pystache", ".chalice/config.json", config_dict, verbose)
 

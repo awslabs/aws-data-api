@@ -7,6 +7,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import chalicelib.utils as utils
+import chalicelib.parameters as params
 
 ERROR = -1
 CHALICE_MISSING = 'AWS Chalice is not installed. Please install Chalice (https://chalice.readthedocs.io/en/latest) and try again'
@@ -41,9 +42,13 @@ parser.add_argument('-log-level', default="INFO", required=False, choices=['INFO
                     dest='log_level', help='Log Level (INFO)')
 parser.add_argument('-schema-refresh-default', default="100", required=False,
                     dest='refresh_schema_hits', help='Schema Refresh Hitcount Default (100)')
-parser.add_argument('-enable-xray', default=False, required=False, type=bool,
+parser.add_argument('-enable-xray', action='store_true',
                     dest='enable_xray', help='Should AWS XRay always be enabled? Turned off for Prod Stages (False)')
-parser.add_argument('-authorization', required=False, dest='auth', choices=['IAM','Cognito','Custom'])
+parser.add_argument('-authorization', required=False, dest='auth', choices=['IAM', 'Cognito', 'Custom'])
+parser.add_argument('-cognito-user-pool', required=False, dest='cog_pool_name',
+                    help="If Cognito Authorization is to be used, the User Pool Name")
+parser.add_argument('-cognito-provider-arns', required=False, dest='cog_provider_arns',
+                    help="If Cognito Authorization is to be used, the list (as csv) of Provider ARNs")
 parser.add_argument('-action', default="deploy", required=False, choices=['prepare', 'deploy'], dest='action',
                     help='Deploy Action (prepare | deploy)')
 parser.add_argument('-verbose', action='store_true', dest='verbose',
