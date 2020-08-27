@@ -1,6 +1,6 @@
 # this file contains all of the Chalice routing logic to implement the AWS Data API as a REST JSON Endpoint using IAM
 # authentication. The Data API can also be accessed natively as a python library using aws_data_api.py
-from chalice import Chalice, CORSConfig, Response, IAMAuthorizer, BadRequestError, ConflictError, NotFoundError
+from chalice import Chalice, CORSConfig, Response, IAMAuthorizer, CognitoUserPoolAuthorizer, BadRequestError, ConflictError, NotFoundError
 import http
 import os
 import boto3
@@ -24,7 +24,18 @@ STAGE = os.getenv('STAGE')
 
 # setup authorisers for view methods
 iam_authorizer = IAMAuthorizer()
-use_authorizer = None
+cognito_authorizer = CognitoUserPoolAuthorizer()
+
+set_authorizer = os.getenv(params.AUTHORIZER_PARAM)
+if set_authorizer == params.AUTHORIZER_IAM:
+    use_authorizer = iam_authorizer
+elif set_authorizer == params.AUTHORIZER_COGNITO:
+    use_authorizer = cognito_authorizer
+elif set_authorizer == params.AUTHORIZER_CUSTOM:
+    # TODO figure out how to dynamically load a custom authorizer here
+    pass
+else:
+    use_authorizer = None
 
 # create the Chalice App reference
 app_name = "%s-%s" % (params.AWS_DATA_API_SHORTNAME, STAGE)

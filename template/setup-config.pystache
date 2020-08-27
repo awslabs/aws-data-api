@@ -14,6 +14,9 @@
         "STAGE": "{{stage_name}}",
         "SCHEMA_VALIDATION_REFRESH_HITCOUNT": "{{refresh_schema_hits}}",
         "LOG_LEVEL": "{{log_level}}"
+        {{#use_auth}}
+        ,"SYSTEM_AUTHORIZER" : "{{auth}}",
+        {{/use_auth}}
         {{#use_xray}}
         ,"AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR"
         ,"AWS_XRAY_TRACING_NAME": "AwsDataAPI-{{stage_name}}"

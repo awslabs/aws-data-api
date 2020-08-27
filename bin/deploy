@@ -43,9 +43,10 @@ parser.add_argument('-schema-refresh-default', default="100", required=False,
                     dest='refresh_schema_hits', help='Schema Refresh Hitcount Default (100)')
 parser.add_argument('-enable-xray', default=False, required=False, type=bool,
                     dest='enable_xray', help='Should AWS XRay always be enabled? Turned off for Prod Stages (False)')
+parser.add_argument('-authorization', required=False, dest='auth', choices=['IAM','Cognito','Custom'])
 parser.add_argument('-action', default="deploy", required=False, choices=['prepare', 'deploy'], dest='action',
                     help='Deploy Action (prepare | deploy)')
-parser.add_argument('-verbose', default="False", required=False, dest='verbose',
+parser.add_argument('-verbose', action='store_true', dest='verbose',
                     help='Verbose Output (False)')
 
 # parse and convert args to dict
@@ -58,6 +59,9 @@ config_doc["sgs"] = json.dumps(args.sgs.split(","))
 
 if args.stage_name.lower() != 'prod' or (args.stage_name.lower() == 'prod' and args.enable_xray is True):
     config_doc["use_xray"] = True
+
+if args.auth is not None:
+    config_doc["use_auth"] = True
 
 utils.generate_configuration_files(config_doc, args.verbose)
 
