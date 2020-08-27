@@ -1,0 +1,26 @@
+{
+  {{#allow_all_cors}}
+  "AllowAllCORS": "True"
+  {{/allow_all_cors}}
+  {{#custom_cors}}
+  "custom": {
+    "allow_origin": "{{cors_domain}}",
+    "allow_headers": [
+      "Content-Type",
+      "X-Amz-Date",
+      "Authorization",
+      "X-Api-Key",
+      "x-requested-with"
+    ],
+    "max_age": 600,
+    "expose_headers": [
+      "Content-Type",
+      "X-Amz-Date",
+      "Authorization",
+      "X-Api-Key",
+      "x-requested-with"
+    ],
+    "allow_credentials": "True"
+  }
+  {{/custom_cors}}
+}

@@ -28,6 +28,9 @@ def generate_configuration_files(config_dict, verbose):
     # generate the iam policy
     __export_template_to_file("template/iam_policy.pystache", "iam_policy.json", config_dict, verbose)
 
+    # generate the cors config
+    if config_dict.get("allow_all_cors") is True or config_dict.get("cors_domain") is not None:
+        __export_template_to_file("template/cors.pystache", "chalicelib/cors.json", config_dict, verbose)
 
 def __export_template_to_file(template_file, output_file, config_doc, verbose=False):
     # import the template file

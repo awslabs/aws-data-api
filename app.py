@@ -93,7 +93,7 @@ with open("chalicelib/cors.json", "r") as f:
 if cors_config.get("AllowAllCORS") == "True":
     cors = True
 else:
-    cors = CORSConfig(**cors_config.get("Chalice"))
+    cors = CORSConfig(**cors_config.get("custom"))
 
 
 # using a functools wrapper here as normal python decorators aren't compatible with the call signature of chalice

@@ -3,3 +3,4 @@ __pycache__
 .chalice
 .idea
 iam_policy.json
+cors.json
