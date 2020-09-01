@@ -40,22 +40,25 @@ def __precheck_config(config_dict):
         config_dict["use_custom_prefix"] = True
 
 
-def generate_configuration_files(config_dict, verbose):
+def generate_configuration_files(config_dict, generate_action, verbose):
     __precheck_config(config_dict)
 
     # generate the config.json file to .chalice
-    __export_template_to_file("template/config.pystache", ".chalice/config.json", config_dict, verbose)
+    __export_template_to_file("template/config.pystache", ".chalice/config.json", config_dict, generate_action, verbose)
 
     # generate the iam policy
-    __export_template_to_file("template/iam_policy.pystache", "iam_policy.json", config_dict, verbose)
+    __export_template_to_file("template/iam_policy.pystache", "iam_policy.json", config_dict, generate_action, verbose)
 
     # generate the cors config
     if config_dict.get("allow_all_cors") is True or config_dict.get("cors_domain") is not None:
-        __export_template_to_file("template/cors.pystache", "chalicelib/cors.json", config_dict, verbose)
+        __export_template_to_file("template/cors.pystache", "chalicelib/cors.json", config_dict, generate_action,
+                                  verbose)
 
 
-def __export_template_to_file(template_file, output_file, config_doc, verbose=False):
+def __export_template_to_file(template_file, output_file, config_doc, generate_action=None, verbose=False):
     # import the template file
+    print("Target: %s" % output_file)
+
     with open(template_file) as t:
         template = t.read()
 
@@ -64,15 +67,16 @@ def __export_template_to_file(template_file, output_file, config_doc, verbose=Fa
 
     rendered = renderer.render(template, config_doc)
 
-    with open(output_file, 'w') as out:
-        out.write(rendered)
+    if generate_action != 'dry-run':
+        with open(output_file, 'w') as out:
+            out.write(rendered)
 
-    out.close()
+        out.close()
+
+        print("Generated configuration successfully")
 
     if verbose is True:
         print(rendered)
-
-    print("Generated configuration to %s" % output_file)
 
 
 def identity_trace(f):
@@ -274,18 +278,49 @@ def get_all_data_apis():
     log = setup_logging()
 
     api_gw = _get_client("apigateway")
-
-    all_apis = api_gw.get_rest_apis()
     region = get_region()
     response = {}
+    custom_domains = {}
 
+    # load api custom domain names
+    all_custom_domains = api_gw.get_domain_names()
+    if "items" in all_custom_domains:
+        for domain in all_custom_domains.get("items"):
+            if "tags" in domain and "source" in domain.get("tags") and domain.get("tags").get(
+                    "source") == params.AWS_DATA_API_NAME:
+                # get base path mappings for the domain
+                base_path_mappings = api_gw.get_base_path_mappings(domainName=domain.get("domainName"))
+                if base_path_mappings is not None and "items" in base_path_mappings:
+                    for path in base_path_mappings.get("items"):
+                        custom_domains[path.get('restApiId')] = {
+                            "api": path.get('restApiId'),
+                            "stage": path.get('stage'),
+                            "basePath": path.get('basePath'),
+                            "url": domain.get("domainName"),
+                            "distributionDomainName": domain.get("distributionDomainName")
+                        }
+
+    # grab all rest API's and match them to Data API's
+    all_apis = api_gw.get_rest_apis()
     if "items" in all_apis:
         for api in all_apis.get("items"):
             if params.AWS_DATA_API_SHORTNAME in api.get("name"):
                 stage = api.get("name").replace(f"{params.AWS_DATA_API_SHORTNAME}-", "")
 
+                # TODO remove this restriction to support custom stage names
                 if stage.lower() in ['dev', 'test', 'prod', 'int']:
-                    response[stage] = f"https://{api.get('id')}.execute-api.{region}.amazonaws.com"
+                    entry = {
+                        "Endpoint": f"https://{api.get('id')}.execute-api.{region}.amazonaws.com",
+                        "Stage": stage
+                    }
+
+                    # check for a custom domain name
+                    domain_info = custom_domains.get(api.get('id'))
+                    if domain_info is not None:
+                        entry["URL"] = domain_info.get("url")
+                        entry["DistributionDomainName"] = domain_info.get("distributionDomainName")
+
+                    response[stage] = entry
 
     return response
 

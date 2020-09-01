@@ -53,7 +53,8 @@ parser.add_argument('-allow-all-cors', action='store_true', dest='allow_all_cors
                     help="Allow requests from all Domains")
 parser.add_argument('-deploy-custom-domain', required=False, dest='custom_domain_info',
                     help="Information for deploying to custom domains. CSV list of Domain Name, ACM Certificate ARN, URL Prefix (optional)")
-parser.add_argument('-action', default="deploy", required=False, choices=['prepare', 'deploy'], dest='action',
+parser.add_argument('-action', default="deploy", required=False, choices=['dry-run', 'prepare', 'deploy'],
+                    dest='action',
                     help='Deploy Action (prepare | deploy)')
 parser.add_argument('-verbose', action='store_true', dest='verbose',
                     help='Verbose Output (False)')
@@ -89,9 +90,11 @@ if args.custom_domain_info is not None:
         if len(domain_info) == 3:
             config_doc["custom_url_prefix"] = domain_info[2]
 
-utils.generate_configuration_files(config_doc, args.verbose)
+utils.generate_configuration_files(config_doc, args.action, args.verbose)
 
 if args.action == "deploy":
+    # install dependencies
+    subprocess.call(["pip3", "install", "-r", "requirements.txt"])
     print("Deploying Data API...")
     deploy_args = ['chalice', 'deploy']
 

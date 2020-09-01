@@ -63,9 +63,14 @@ elif set_authorizer == params.AUTHORIZER_COGNITO:
         print("Unable to configure Cognito Authorizer without %s and %s configuration items" % params.COGNITO_POOL_NAME,
               params.COGNITO_PROVIDER_ARNS)
 elif set_authorizer == params.AUTHORIZER_CUSTOM:
-    use_authorizer = custom_auth
+    use_authorizer = None
 else:
     use_authorizer = None
+
+if use_authorizer is None:
+    print("Stage deployed without Authorizer")
+else:
+    print("Using Authorizer %s" % set_authorizer.__name__)
 
 # TODO Get rid of this
 dynamo_resource = boto3.resource('dynamodb', region_name=REGION)
