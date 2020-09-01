@@ -297,7 +297,7 @@ def get_all_data_apis():
                             "stage": path.get('stage'),
                             "basePath": path.get('basePath'),
                             "url": domain.get("domainName"),
-                            "distributionDomainName": domain.get("distributionDomainName")
+                            "cf": domain.get("distributionDomainName")
                         }
 
     # grab all rest API's and match them to Data API's
@@ -318,7 +318,10 @@ def get_all_data_apis():
                     domain_info = custom_domains.get(api.get('id'))
                     if domain_info is not None:
                         entry["URL"] = domain_info.get("url")
-                        entry["DistributionDomainName"] = domain_info.get("distributionDomainName")
+                        entry["DistributionDomainName"] = domain_info.get("cf")
+
+                        if domain_info.get('basePath') is not None and domain_info.get('basePath') != '(none)':
+                            entry["BasePath"] = domain_info.get('basePath')
 
                     response[stage] = entry
 
