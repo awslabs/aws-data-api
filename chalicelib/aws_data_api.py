@@ -2,7 +2,6 @@ from chalicelib.exceptions import *
 import chalicelib.utils as utils
 import chalicelib.parameters as params
 from chalicelib.utils import identity_trace
-from chalicelib.cloudwatch_emitter import evented
 import logging
 from chalicelib.api_metadata import ApiMetadata
 from chalicelib.gremlin_handler import GremlinHandler

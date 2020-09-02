@@ -44,16 +44,18 @@ class DataApiCache:
     def get(self, api_name):
         if api_name not in self._api_cache:
             # load from metadata
-            self._logger.info(f"Loading API Instance {api_name} Stage {self._stage} from Metadata")
+            self._logger.info(f"Cache Miss: Loading API Instance {api_name} Stage {self._stage} from Metadata service")
             api_metadata_handler = ApiMetadata(self._region, self._logger)
 
             api_metadata = api_metadata_handler.get_api_metadata(api_name=api_name, stage=self._stage)
 
             if api_metadata is None:
-                raise BadRequestError(f"Unable to resolve API {api_name} in Stage {self._stage}")
+                msg = f"Unable to resolve API {api_name} in Stage {self._stage}"
+                self._logger.error(msg)
+                raise BadRequestError(msg)
             else:
                 if api_metadata.get("Status") == params.STATUS_CREATING:
-                    raise InvalidArgumentsException("API Not Active")
+                    raise InvalidArgumentsException("API Not Yet Active")
                 else:
                     api_metadata['app'] = self._app
                     api_metadata[params.REGION] = self._region

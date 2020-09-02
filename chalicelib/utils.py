@@ -317,7 +317,7 @@ def get_all_data_apis():
                     # check for a custom domain name
                     domain_info = custom_domains.get(api.get('id'))
                     if domain_info is not None:
-                        entry["URL"] = domain_info.get("url")
+                        entry["URL"] = f"https://{domain_info.get('url')}"
                         entry["DistributionDomainName"] = domain_info.get("cf")
 
                         if domain_info.get('basePath') is not None and domain_info.get('basePath') != '(none)':
