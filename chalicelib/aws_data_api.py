@@ -13,6 +13,8 @@ import boto3
 from elasticsearch import Elasticsearch
 from aws_xray_sdk.core import patch
 
+__version__ = "0.9.0b1"
+
 # patch boto3 with xray instrumentation if the environment is configured
 if utils.strtobool(os.getenv(params.XRAY_ENABLED, 'false')) is True:
     patch(['boto3'])
