@@ -174,6 +174,12 @@ def registry():
     return dapi.get_registry(REGION, STAGE)
 
 
+@app.route('/version', methods=['GET'], authorizer=use_authorizer, cors=cors)
+@chalice_function
+def get_version():
+    return {"version": dapi.__version__}
+
+
 @app.route('/data-apis', methods=['GET'], authorizer=use_authorizer, cors=cors)
 @chalice_function
 def get_all():
