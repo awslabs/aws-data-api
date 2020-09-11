@@ -54,8 +54,7 @@ parser.add_argument('-allow-all-cors', action='store_true', dest='allow_all_cors
 parser.add_argument('-deploy-custom-domain', required=False, dest='custom_domain_info',
                     help="Information for deploying to custom domains. CSV list of Domain Name, ACM Certificate ARN, URL Prefix (optional)")
 parser.add_argument('-action', default="deploy", required=False, choices=['dry-run', 'prepare', 'deploy'],
-                    dest='action',
-                    help='Deploy Action (prepare | deploy)')
+                    dest='action', help='Deploy Action (prepare | deploy)')
 parser.add_argument('-verbose', action='store_true', dest='verbose',
                     help='Verbose Output (False)')
 

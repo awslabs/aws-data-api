@@ -63,7 +63,7 @@ class DataAPIStorageHandler:
     _strict_occv = False
     _gremlin_address = None
     _gremlin_endpoint = None
-    _dynamo_helper = None
+    _dynamo_utils = None
     _deployed_account = None
 
     def __init__(self, table_name, primary_key_attribute, region, delete_mode, allow_runtime_delete_mode_change,
@@ -84,7 +84,7 @@ class DataAPIStorageHandler:
         # setup dynamoDB resources
         self._dynamo_client = boto3.client('dynamodb', region_name=region)
         self._dynamo_resource = boto3.resource("dynamodb", region_name=region)
-        self._dynamo_helper = DynamoTableUtils(region=self._region, logger=self._logger)
+        self._dynamo_utils = DynamoTableUtils(region=self._region, logger=self._logger)
 
         self._sts_client = boto3.client("sts", region_name=region)
         self._delete_mode = delete_mode
@@ -114,7 +114,7 @@ class DataAPIStorageHandler:
                                                  params.METADATA, pitr_enabled, kms_key_arn)
 
         # create/verify the control table
-        self._control_table = self._dynamo_helper.verify_control_table()
+        self._control_table = self._dynamo_utils.verify_control_table()
 
         log.info(f'DynamoDB Storage Handler for {self._table_name} Online')
 
@@ -151,7 +151,7 @@ class DataAPIStorageHandler:
         log.debug(args)
         self._dynamo_client.create_table(**args)
 
-        self._dynamo_helper.wait_until_table_active(table_name)
+        self._dynamo_utils.wait_until_table_active(table_name)
 
         # turn on point in time recovery snapshotting if requested
         if pitr_enabled is not None:
@@ -171,7 +171,7 @@ class DataAPIStorageHandler:
                     enabled = True
                 except self._dynamo_client.exceptions.ContinuousBackupsUnavailableException:
                     pass
-            self._dynamo_helper.wait_until_table_active(table_name)
+            self._dynamo_utils.wait_until_table_active(table_name)
 
         return self._dynamo_resource.Table(table_name)
 
@@ -227,10 +227,10 @@ class DataAPIStorageHandler:
         for i in indexes:
             index_name = i['IndexName']
             # check if the index already exists
-            index_status = self._dynamo_helper.get_index_status(table_name, index_name)
+            index_status = self._dynamo_utils.get_index_status(table_name, index_name)
 
             if index_status is not None:
-                self._dynamo_helper.wait_until_index_active(table_name, index_name)
+                self._dynamo_utils.wait_until_index_active(table_name, index_name)
             else:
                 attr = []
                 gsi = []
@@ -272,7 +272,7 @@ class DataAPIStorageHandler:
                                                      )
 
                     # wait for table status to return to 'Active'
-                    self._dynamo_helper.wait_until_index_active(table_name, index_name)
+                    self._dynamo_utils.wait_until_index_active(table_name, index_name)
                 except ClientError as ce:
                     log.error(ce)
                     raise ce
@@ -306,7 +306,7 @@ class DataAPIStorageHandler:
             self._do_table_backup(table_name)
 
         self._dynamo_client.delete_table(TableName=table_name)
-        self._dynamo_helper.wait_until_table_gone(table_name)
+        self._dynamo_utils.wait_until_table_gone(table_name)
 
     # method which configures a data api table, including secondary indexes and Glue crawler
     def _setup_table(self, table_name, index_config, table_type, pitr_enabled=None, kms_key_arn=None):
@@ -318,7 +318,7 @@ class DataAPIStorageHandler:
             this_table = self._dynamo_resource.Table(table_name)
 
             # make sure the table is active
-            self._dynamo_helper.wait_until_table_active(table_name)
+            self._dynamo_utils.wait_until_table_active(table_name)
         except self._dynamo_client.exceptions.ResourceNotFoundException:
             log.info(f'Creating new DynamoDB table: {table_name}')
             new_table = True
@@ -461,7 +461,7 @@ class DataAPIStorageHandler:
             args[dtu.EAV][":true"] = True
 
         # add last update and last updated by
-        self._dynamo_helper.decorate_update_request(args, caller_identity, update_action)
+        self._dynamo_utils.decorate_update_request(args, caller_identity, update_action)
 
         try:
             log.debug("Performing DDB Item Update")
@@ -504,7 +504,7 @@ class DataAPIStorageHandler:
             }
 
             # add last update and last updated by
-            self._dynamo_helper.decorate_update_request(args, caller_identity, params.ACTION_RESTORE)
+            self._dynamo_utils.decorate_update_request(args, caller_identity, params.ACTION_RESTORE)
 
             try:
                 log.debug("Performing Item Restore")
@@ -702,7 +702,7 @@ class DataAPIStorageHandler:
         args[dtu.EAV] = attribute_values
 
         # decorate the request with last update date and by
-        self._dynamo_helper.decorate_update_request(args, caller_identity, params.ACTION_UPDATE)
+        self._dynamo_utils.decorate_update_request(args, caller_identity, params.ACTION_UPDATE)
 
         try:
             # run the request through a json encode decode to fix float types to decimal
@@ -716,9 +716,9 @@ class DataAPIStorageHandler:
     # method which implements a json schema refresh
     def _refresh_schema(self):
         try:
-            self._schema = self._dynamo_helper.get_control_item(table_ref=self._control_table,
-                                                                api_name=self._table_name,
-                                                                control_type=params.CONTROL_TYPE_RESOURCE_SCHEMA)
+            self._schema = self._dynamo_utils.get_control_item(table_ref=self._control_table,
+                                                               api_name=self._table_name,
+                                                               control_type=params.CONTROL_TYPE_RESOURCE_SCHEMA)
 
             if self._schema is not None:
                 self._schema_validator = fastjsonschema.compile(self._schema)
@@ -871,7 +871,7 @@ class DataAPIStorageHandler:
                         dtu.CE: Attr(self._pk_name).eq(str(v))
                     }
 
-                    self._dynamo_helper.decorate_update_request(args, caller_identity, params.ACTION_UPDATE)
+                    self._dynamo_utils.decorate_update_request(args, caller_identity, params.ACTION_UPDATE)
                     response = None
                     try:
                         log.debug("Item Master Link Update")
@@ -890,7 +890,7 @@ class DataAPIStorageHandler:
                 return update_response
 
     # private method which wraps scan and query API's based upon presence of indexes for the searched elements
-    def _perform_query(self, table, last_key, index_attr, search_value, **kwargs):
+    def _perform_query(self, table, last_key, index_attr, search_value, query_filters=None, **kwargs):
         self._logger.debug("Storage Handler Query")
         index_name = self._get_indexname(table.name, index_attr)
 
@@ -903,6 +903,15 @@ class DataAPIStorageHandler:
 
         if params.QUERY_PARAM_LIMIT in kwargs:
             args['Limit'] = int(kwargs.get(params.QUERY_PARAM_LIMIT))
+
+        # add the filters to the query
+        query_filter, expression_names, expression_values = self._get_filter_expression(query_filters)
+
+        if query_filter is not None:
+            self._logger.debug(f"Applying secondary query filter:{query_filter}")
+            args[dtu.FE] = f"{args[dtu.FE]} and {query_filter}"
+            args[dtu.EAN].update(expression_names)
+            args[dtu.EAV].update(expression_values)
 
         # add the last_key to the scan if provided by the client
         if last_key is not None:
@@ -938,6 +947,27 @@ class DataAPIStorageHandler:
 
         return args
 
+    # method to create a valid dynamo filter expression from a set of supplied filters
+    def _get_filter_expression(self, filters: dict) -> tuple:
+        filter_expressions = []
+        expression_names = {}
+        expression_values = {}
+
+        if filters is not None:
+            for k, v in filters.items():
+                key = f'#{self._dynamo_utils.make_ddb_expressionval(k)}'
+                value = f':{self._dynamo_utils.make_ddb_expressionval(k)}'
+                filter_expressions.append(f"{key} = {value}")
+                expression_names[key] = k
+                expression_values[value] = v
+
+            filter_expression = filter_expressions[0] if len(filter_expressions) == 1 else ' AND '.join(
+                filter_expressions)
+
+            return filter_expression, expression_names, expression_values
+        else:
+            return None, None, None
+
     # method to perform a scan operation against a data or metadata API table, returning a single page of data
     def _perform_scan(self, table, last_key, scan_filters=None, do_limit_in_scan: bool = False, **kwargs):
         self._logger.debug("Storage Handler Scan")
@@ -968,21 +998,10 @@ class DataAPIStorageHandler:
         if kwargs.get(params.QUERY_PARAM_CONSISTENT) is not None:
             args['ConsistentRead'] = True
 
-        filter_expressions = []
-        expression_names = {}
-        expression_values = {}
+        scan_filter, expression_names, expression_values = self._get_filter_expression(scan_filters)
 
-        if scan_filters is not None:
-            for k, v in scan_filters.items():
-                key = f'#{self._dynamo_helper.make_ddb_expressionval(k)}'
-                value = f':{self._dynamo_helper.make_ddb_expressionval(k)}'
-                filter_expressions.append(f"{key} = {value}")
-                expression_names[key] = k
-                expression_values[value] = v
-
-            scan_filter = filter_expressions[0] if len(filter_expressions) == 1 else ' AND '.join(
-                filter_expressions)
-
+        if scan_filter is not None:
+            self._logger.debug(f"Applying scan filter:{scan_filter}")
             args[dtu.FE] = f"{args[dtu.FE]} and {scan_filter}"
             args[dtu.EAN].update(expression_names)
             args[dtu.EAV].update(expression_values)
@@ -1049,6 +1068,7 @@ class DataAPIStorageHandler:
     # public method to perform a search of data or metadata
     def find(self, **kwargs):
         self._logger.debug("Performing Storage Handler Find")
+        self._logger.debug(kwargs)
 
         if kwargs is None:
             raise InvalidArgumentsException(
@@ -1062,12 +1082,12 @@ class DataAPIStorageHandler:
         index_available = False
         last_key = kwargs.get(params.EXCLUSIVE_START_KEY)
 
-        # add support for query on both metadata and resources at the same time
-        if params.RESOURCE in kwargs:
+        # TODO add support for query on both metadata and resources at the same time
+        if params.RESOURCE in kwargs and kwargs.get(params.RESOURCE) is not None:
             search_table = self._resource_table
             index_attrs = self._table_indexes
             search_doc = kwargs.get(params.RESOURCE)
-        elif params.METADATA in kwargs:
+        elif params.METADATA in kwargs and kwargs.get(params.METADATA) is not None:
             search_table = self._metadata_table
             index_attrs = self._meta_indexes
             search_doc = kwargs.get(params.METADATA)
@@ -1085,12 +1105,16 @@ class DataAPIStorageHandler:
                     index_available = True
                     search_index_attr = k
                     search_value = v
+
+                    # remove this index value from the search document so that we don't have a duplicate which ddb will
+                    # choke on
+                    del search_doc[k]
                     break
 
         if index_available:
             # we'll do an index search on the first index that matched in the search set
             return self._perform_query(table=search_table, last_key=last_key, index_attr=search_index_attr,
-                                       search_value=search_value, **kwargs)
+                                       search_value=search_value, query_filters=search_doc, **kwargs)
         else:
             # there are no index columns available, so we'll scan the table
             return self._perform_scan(table=search_table, last_key=last_key, scan_filters=search_doc,
@@ -1124,7 +1148,7 @@ class DataAPIStorageHandler:
 
     def get_deployed_account(self):
         # get the deployed account from metadata
-        deployed_account = self._dynamo_helper.get_table_metadata(api_name=self._table_name)['DeployedAccount']
+        deployed_account = self._dynamo_utils.get_table_metadata(api_name=self._table_name)['DeployedAccount']
 
         if self._deployed_account is None:
             self._deployed_account = deployed_account
