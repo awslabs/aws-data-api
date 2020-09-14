@@ -9,11 +9,15 @@ from gremlin_python.driver.client import Client
 from gremlin_python.structure.graph import Vertex, Edge
 from chalicelib.exceptions import ConstraintViolationException, ResourceNotFoundException
 from chalicelib.neptune import Neptune
+import chalicelib.parameters as params
 
 ID = 'id'
 DEFAULT_SEARCH_DEPTH = 10
 DATE = 'date'
 CONSTRAINT_VIOLATION_EXCEPTION = 'ConstraintViolationException'
+
+log = None
+log = utils.setup_logging()
 
 
 def graph_method(f):
@@ -23,8 +27,9 @@ def graph_method(f):
             n = Neptune()
             try:
                 self.g = n.graphTraversal(neptune_endpoint=self._url, neptune_port=self._port,
-                                          retry_limit=self.connection_retries if self.connection_retries is not None else n.DEFAULT_RETRY_COUNT)
+                                          retry_limit=self._connection_retries if self._connection_retries is not None else params.DEFAULT_RETRY_COUNT)
             except Exception as e:
+                log.error(e)
                 raise ResourceNotFoundException(f"Unable to connect to Gremlin Endpoint {self._url}:{self._port}")
 
             print(f"Connected Gremlin Endpoint {self._url}:{self._port}")
@@ -124,9 +129,9 @@ class GremlinHandler:
     @graph_method
     def create_relationship(self, label, from_id, to_id, extra_properties):
         # create from, then create to, then connect them together
-        self.g.get_or_create_vertex(label_value=self._table_name, id=from_id)
-        self.g.get_or_create_vertex(label_value=self._table_name, id=to_id)
-        self.g.create_edge(label=label, from_id=from_id, to_id=to_id, extra_properties=extra_properties)
+        self.get_or_create_vertex(label_value=label, id=from_id)
+        self.get_or_create_vertex(label_value=label, id=to_id)
+        self.create_edge(label=label, from_id=from_id, to_id=to_id, extra_properties=extra_properties)
 
     # get an object that resides in the graph, by ID
     def _validated_vertex_id(self, id):

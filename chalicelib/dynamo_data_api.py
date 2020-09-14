@@ -61,14 +61,12 @@ class DataAPIStorageHandler:
     _catalog_database = None
     _allow_non_itemmaster_writes = None
     _strict_occv = False
-    _gremlin_address = None
-    _gremlin_endpoint = None
     _dynamo_utils = None
     _deployed_account = None
 
     def __init__(self, table_name, primary_key_attribute, region, delete_mode, allow_runtime_delete_mode_change,
                  table_indexes, metadata_indexes, schema_validation_refresh_hitcount, crawler_rolename,
-                 catalog_database, allow_non_itemmaster_writes, strict_occv, gremlin_address, deployed_account,
+                 catalog_database, allow_non_itemmaster_writes, strict_occv, deployed_account,
                  pitr_enabled=None, kms_key_arn=None):
         # setup class logger
         self._logger = utils.setup_logging()
@@ -98,8 +96,6 @@ class DataAPIStorageHandler:
             self._strict_occv = strict_occv
         else:
             self._strict_occv = utils.strtobool(strict_occv)
-
-        self._gremlin_address = gremlin_address
 
         # setup the tables used for data storage
         if table_indexes is not None:
@@ -727,25 +723,6 @@ class DataAPIStorageHandler:
         except Exception as e:
             raise InvalidArgumentsException(f"Error during compilation of API Json Schema: {e}")
 
-    # method which writes a set of object references to the Gremlin helper class
-    def _put_references(self, id, reference_doc):
-        g = self._gremlin_endpoint
-        if g is not None:
-            from_id = utils.get_arn(id, self._table_name, self._deployed_account)
-
-            for r in reference_doc:
-                if params.RESOURCE not in r:
-                    raise InvalidArgumentsException(f"Malformed Reference: {r}. Must Contain a {params.RESOURCE}")
-                else:
-                    to_id = r[params.RESOURCE]
-
-                    # remove the resource and ID keys so we can use the rest of the document for extra properties
-                    del r[params.RESOURCE]
-
-                    g.create_relationship(label=params.REFERENCES, from_id=from_id, to_id=to_id, extra_properties=r)
-        else:
-            raise UnimplementedFeatureException(NO_GREMLIN)
-
     # public method to perform an update on a data API item
     def update_item(self, caller_identity, id, **kwargs):
         log.debug(f"Update Item {id}")
@@ -757,10 +734,6 @@ class DataAPIStorageHandler:
         valid_topargs = [params.METADATA, params.RESOURCE, params.REFERENCES]
         if not any(x in kwargs for x in valid_topargs):
             raise InvalidArgumentsException("Update Request must include {0}, {1], or {2}" % tuple(valid_topargs))
-
-        if params.REFERENCES in kwargs:
-            log.debug("Creating Reference Links")
-            self._put_references(id, kwargs.get(params.REFERENCES))
 
         # process the metadata update
         if params.METADATA in kwargs:
@@ -1122,12 +1095,16 @@ class DataAPIStorageHandler:
 
     # public method to return stream information for the data and metadata tables
     def get_streams(self):
+        resource_table = self._resource_table.table_arn
         resource_stream = self._resource_table.latest_stream_arn
+        metadata_table = self._metadata_table.table_arn
         metadata_stream = self._metadata_table.latest_stream_arn
 
         return {
-            params.RESOURCE_ARN: resource_stream,
-            params.METADATA_ARN: metadata_stream
+            params.RESOURCE_TABLE_ARN: resource_table,
+            params.RESOURCE_STREAM_ARN: resource_stream,
+            params.METADATA_TABLE_ARN: metadata_table,
+            params.METADATA_STREAM_ARN: metadata_stream
         }
 
     def get_usage(self, table_name):

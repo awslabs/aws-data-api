@@ -164,8 +164,8 @@ class StreamsIntegration:
             raise InvalidArgumentsException("Invalid ES Domain or Cannot Verify ES Domain Detail")
 
         # configure delivery streams and functions for both the resource stream and the metadata
-        stream_arn_list = [{'Type': params.RESOURCE, 'ARN': endpoints[params.RESOURCE_ARN]},
-                           {'Type': params.METADATA, 'ARN': endpoints[params.METADATA_ARN]}]
+        stream_arn_list = [{'Type': params.RESOURCE, 'ARN': endpoints[params.RESOURCE_STREAM_ARN]},
+                           {'Type': params.METADATA, 'ARN': endpoints[params.METADATA_STREAM_ARN]}]
 
         print(f"Configuring {len(stream_arn_list)} Search Integration Flows")
 

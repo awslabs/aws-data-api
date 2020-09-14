@@ -218,12 +218,11 @@ class AwsDataAPI:
                                                           self._catalog_database,
                                                           self._allow_non_itemmaster_writes,
                                                           self._strict_occv,
-                                                          self._gremlin_address,
                                                           kwargs.get(params.DEPLOYED_ACCOUNT, None),
                                                           kwargs[params.STORAGE_HANDLER],
-                                                          bool(kwargs.get(params.PITR_ENABLED,
-                                                                          params.DEFAULT_PITR_ENABLED)),
-                                                          kwargs.get(params.STORAGE_CRYPTO_KEY_ARN, None))
+                                                          pitr_enabled=bool(kwargs.get(params.PITR_ENABLED,
+                                                                                       params.DEFAULT_PITR_ENABLED)),
+                                                          kms_key_arn=kwargs.get(params.STORAGE_CRYPTO_KEY_ARN, None))
 
         # setup the gremlin integration if one has been provided
         if self._gremlin_address is not None:
@@ -236,10 +235,29 @@ class AwsDataAPI:
 
         log.info(f"AWS Data API for {self._catalog_database}.{self._table_name} Online.")
 
+    # method which writes a set of object references to the Gremlin helper class
+    def _put_references(self, id, reference_doc):
+        g = self._gremlin_endpoint
+        if g is not None:
+            from_id = utils.get_arn(id, self._table_name, self._deployed_account)
+
+            for r in reference_doc:
+                if params.RESOURCE not in r:
+                    raise InvalidArgumentsException(f"Malformed Reference: {r}. Must Contain a {params.RESOURCE}")
+                else:
+                    to_id = r[params.RESOURCE]
+
+                    # remove the resource and ID keys so we can use the rest of the document for extra properties
+                    del r[params.RESOURCE]
+
+                    g.create_relationship(label=params.REFERENCES, from_id=from_id, to_id=to_id, extra_properties=r)
+        else:
+            raise UnimplementedFeatureException(NO_GREMLIN)
+
     def _get_storage_handler(self, table_name, primary_key_attribute, region, delete_mode,
                              allow_runtime_delete_mode_change, table_indexes,
                              metadata_indexes, schema_validation_refresh_hitcount, crawler_rolename, catalog_database,
-                             allow_non_itemmaster_writes, strict_occv, gremlin_address, deployed_account, handler_name,
+                             allow_non_itemmaster_writes, strict_occv, deployed_account, handler_name,
                              pitr_enabled=None, kms_key_arn=None):
         """
         Method to load a Storage Handler class based upon the configured handler name.
@@ -256,7 +274,6 @@ class AwsDataAPI:
         :param catalog_database:
         :param allow_non_itemmaster_writes:
         :param strict_occv:
-        :param gremlin_address:
         :param deployed_account:
         :param handler_name:
         :param pitr_enabled:
@@ -279,7 +296,6 @@ class AwsDataAPI:
                              catalog_database,
                              allow_non_itemmaster_writes,
                              strict_occv,
-                             gremlin_address,
                              deployed_account,
                              pitr_enabled,
                              kms_key_arn)
@@ -461,8 +477,16 @@ class AwsDataAPI:
     @identity_trace
     def update_item(self, id, **kwargs):
         fetch_id = self._validate_arn_id(id)
+        response = None
 
-        return self._storage_handler.update_item(caller_identity=self._simple_identity, id=fetch_id, **kwargs)
+        # TODO move to Data API
+        if params.REFERENCES in kwargs:
+            log.debug("Creating Reference Links")
+            self._put_references(id, kwargs.get(params.REFERENCES))
+
+        response = self._storage_handler.update_item(caller_identity=self._simple_identity, id=fetch_id, **kwargs)
+
+        return response
 
     # Drop an entire API Namespace. This will do a backup before dropping the underlying storage tables
     # @evented(api_operation="DropAPI")

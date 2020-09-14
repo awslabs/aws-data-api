@@ -100,9 +100,9 @@ def strtobool(val):
     return _util.strtobool(val) == 1
 
 
-def setup_logging():
+def setup_logging(set_name: str = None):
     logging.basicConfig()
-    log = logging.getLogger(params.AWS_DATA_API_NAME)
+    log = logging.getLogger(params.AWS_DATA_API_NAME if set_name is None else set_name)
     log.setLevel(params.DEFAULT_LOG_LEVEL)
 
     log_level = os.getenv(params.LOG_LEVEL_PARAM)

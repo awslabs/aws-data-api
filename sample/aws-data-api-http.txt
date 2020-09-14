@@ -1,4 +1,30 @@
+Resources deployed:
+  - Lambda ARN: arn:aws:lambda:eu-west-1:887210671223:function:AwsDataAPI-dev-EsIndexer
+  - Lambda ARN: arn:aws:lambda:eu-west-1:887210671223:function:AwsDataAPI-dev-Provisioning
+  - Lambda ARN: arn:aws:lambda:eu-west-1:887210671223:function:AwsDataAPI-dev-Understander
+  - Lambda ARN: arn:aws:lambda:eu-west-1:887210671223:function:AwsDataAPI-dev
+  - Rest API URL: https://sdma0i6rek.execute-api.eu-west-1.amazonaws.com/dev/
+  - Custom domain name:
+      HostedZoneId: Z2FDTNDATAQYW2
+      AliasDomainName: dbfje2qy9pn4z.cloudfront.net
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export API_ENDPOINT=meyersi.sa.aws.dev
 export API_ENDPOINT=sdma0i6rek.execute-api.eu-west-1.amazonaws.com
+export API_ENDPOINT=dbfje2qy9pn4z.cloudfront.net
 export STAGE=dev
 
 # get list of endpoints
@@ -9,6 +35,8 @@ http GET https://$API_ENDPOINT/$STAGE/namespaces
 
 # gremlin console terminal session
 ssh ec2-user@ip-10-0-12-230.eu-west-1.compute.internal -o "proxycommand ssh -W %h:%p -i /Users/meyersi/.credentials/ian-meyers ec2-user@ec2-34-245-211-148.eu-west-1.compute.amazonaws.com"
+cd apache-tinkerpop-gremlin-console-3.3.2
+./bin/gremlin.sh
 :remote connect tinkerpop.server conf/neptune-remote.yaml
 :remote console
 
@@ -51,32 +79,35 @@ http PUT https://$API_ENDPOINT/$STAGE/MyItem Resource:=@/tmp/resource.json Metad
 http PUT https://$API_ENDPOINT/$STAGE/Product/239847239874982374 Resource:=@~/Temp/product.json
 
 # put resource body
-http PUT https://$API_ENDPOINT/$STAGE/MyItem/45678 Resource:="){"attr1":"value1", "attr2":"value2","attr3":"value3","attr4":"value4"}")
+http PUT https://$API_ENDPOINT/$STAGE/MyItem/45678 Resource:='{"attr1":"value1", "attr2":"value2","attr3":"value3","attr4":"value4"}'
 
 # put resource body that can support strict occv
-http PUT https://$API_ENDPOINT/$STAGE/MyItem/123 Resource:="){"attr1":"value1", "attr2":"value2","attr3":"value3","attr4":"value4"}")  ItemVersion:=2
+http PUT https://$API_ENDPOINT/$STAGE/MyItem/123 Resource:='{"attr1":"value1", "attr2":"value2","attr3":"value3","attr4":"value4"}'  ItemVersion:=2
 
 # put resource body with conditions
 
 
 # put references body
-http PUT https://$API_ENDPOINT/$STAGE/MyItem/123 References:=")[{"Resource": "arn:aws:dapi:eu-west-1:887210671223:MyItem-dev:8888"}]")
-http PUT https://$API_ENDPOINT/$STAGE/MyItem/123 References:=")[{"Resource": "arn:aws:dapi:eu-west-1:887210671223:MyItem-dev:8888", "MyReferenceAttr1": "value1", "MyReferenceAttr2": "value2"}]")
+http PUT https://$API_ENDPOINT/$STAGE/MyItem/123 References:='[{"Resource": "arn:aws:dapi:eu-west-1:887210671223:MyItem-dev:8888"}]'
+http PUT https://$API_ENDPOINT/$STAGE/MyItem/123 References:='[{"Resource": "arn:aws:dapi:eu-west-1:887210671223:MyItem-dev:8888", "MyReferenceAttr1": "value1", "MyReferenceAttr2": "value2"}]'
 
 # put resource body without strict schema that will fail validation
-http PUT https://$API_ENDPOINT/$STAGE/MyItem/123 Resource:="){"attr1":"value1","ShouldntBeHere":"1"}")
+http PUT https://$API_ENDPOINT/$STAGE/MyItem/123 Resource:='{"attr1":"value1","ShouldntBeHere":"1"}'
 
 # put resource body with strict schema that will fail validation
-http PUT https://$API_ENDPOINT/$STAGE/MyItem/123 Resource:="){"attr1":"value1","ShouldntBeHere":"1"}") StrictSchemaValidation=True
+http PUT https://$API_ENDPOINT/$STAGE/MyItem/123 Resource:='{"attr1":"value1","ShouldntBeHere":"1"}' StrictSchemaValidation=True
 
 # put item metadata only
-http PUT https://$API_ENDPOINT/$STAGE/MyItem/123 Metadata:="){"CostCenter":"9994"}")
+http PUT https://$API_ENDPOINT/$STAGE/MyItem/123 Metadata:='{"CostCenter":"9994"}'
 
 # get api info
 http get https://$API_ENDPOINT/$STAGE/MyItem/info
 
+# get deployed API version
+http get https://$API_ENDPOINT/$STAGE/MyItem/version
+
 # put table metadata
-http PUT https://$API_ENDPOINT/$STAGE/MyItem/info metadata1=abc metadata2=123 metadata3:="){"embedded1" : "value1", "embedded2" : "value2"}")
+http PUT https://$API_ENDPOINT/$STAGE/MyItem/info metadata1=abc metadata2=123 metadata3:='{"embedded1" : "value1", "embedded2" : "value2"}'
 
 # delete the item
 http DELETE https://$API_ENDPOINT/$STAGE/MyItem/345
@@ -100,25 +131,25 @@ http GET https://$API_ENDPOINT/$STAGE/MyItem/schema/resource
 http PUT https://$API_ENDPOINT/$STAGE/MyItem/schema/resource < ~/Temp/MyItem.schema.json
 
 # scan resource request
-http POST https://$API_ENDPOINT/$STAGE/MyItem/find Resource:="){"attr2":"value2-102"}")
+http POST https://$API_ENDPOINT/$STAGE/MyItem/find Resource:='{"attr2":"value2-102"}'
 
 # scan with limit
-http POST https://$API_ENDPOINT/$STAGE/MyItem/find?limit=100 Resource:="){"attr2":"value2-102"}")
+http POST https://$API_ENDPOINT/$STAGE/MyItem/find?limit=100 Resource:='{"attr2":"value2-102"}'
 
 # consistent scan with limit
-http POST https://$API_ENDPOINT/$STAGE/MyItem/find?limit=100&consistent=true Resource:="){"attr2":"value2-102"}")
+http POST https://$API_ENDPOINT/$STAGE/MyItem/find?limit=100&consistent=true Resource:='{"attr2":"value2-102"}'
 
 # query metadata request
-http POST https://$API_ENDPOINT/$STAGE/MyItem/find Metadata:="){"CostCenter":"7003"}")
+http POST https://$API_ENDPOINT/$STAGE/MyItem/find Metadata:='{"CostCenter":"7003"}'
 
 # query for Item Master request
-http POST https://$API_ENDPOINT/$STAGE/MyItem/find Resource:="){"ItemMasterID":"14"}")
+http POST https://$API_ENDPOINT/$STAGE/MyItem/find Resource:='{"ItemMasterID":"14"}'
 
 # query with limit
-http POST https://$API_ENDPOINT/$STAGE/MyItem/find?limit=10 Metadata:="){"CostCenter":"7003"}")
+http POST https://$API_ENDPOINT/$STAGE/MyItem/find?limit=10 Metadata:='{"CostCenter":"7003"}'
 
 # query resource request
-http POST https://$API_ENDPOINT/$STAGE/MyItem/find Resource:="){"attr1":"value1-102"}")
+http POST https://$API_ENDPOINT/$STAGE/MyItem/find Resource:='{"attr1":"value1-102"}'
 
 # get outbound lineage request
 http GET https://$API_ENDPOINT/$STAGE/MyItem/123/downstream?search_depth=1
