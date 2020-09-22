@@ -552,7 +552,7 @@ class DataAPIStorageHandler:
                     deleted = True
                     return self.remove_resource_attributes(id, resource_attributes, caller_identity)
 
-            # allow the caller to specify only a metadata delete by sending just an empty Metadata dict
+            # allow the caller to specify only a metadata delete by sending just an empty Metadata list
             if params.METADATA in kwargs and params.RESOURCE not in kwargs:
                 delete_resource = False
 
@@ -864,6 +864,8 @@ class DataAPIStorageHandler:
 
     # private method which wraps scan and query API's based upon presence of indexes for the searched elements
     def _perform_query(self, table, last_key, index_attr, search_value, query_filters=None, **kwargs):
+        # TODO Add support for parallel query through segments/total_segments args
+
         self._logger.debug("Storage Handler Query")
         index_name = self._get_indexname(table.name, index_attr)
 

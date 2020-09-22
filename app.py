@@ -417,8 +417,8 @@ def export(api_name):
     if app.current_request.method == 'GET':
         p = app.current_request.query_params
 
-        job_name = p.get('JobName', None)
-        run_id = p.get('JobRunId', None)
+        job_name = p.get(params.JOB_NAME_PARAM, None)
+        run_id = p.get(params.JOB_RUN_PARAM, None)
 
         if job_name is not None and run_id is not None:
             return api_cache.get(api_name).get_export_job_status(job_name=job_name, run_id=run_id)
@@ -426,7 +426,7 @@ def export(api_name):
             # get all running jobs for the job name
             return api_cache.get(api_name).get_running_export_jobs(job_name=job_name)
         else:
-            raise BadRequestError("Must supply JobName and optionally JobRunId ")
+            raise BadRequestError(f"Must supply {params.JOB_NAME_PARAM} and optionally {params.JOB_NAME_PARAM}  ")
     else:
         request_params = app.current_request.json_body
 
