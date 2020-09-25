@@ -430,10 +430,10 @@ class AwsDataAPI:
         response = {}
         item = self._storage_handler.get(id=fetch_id, suppress_meta_fetch=suppress_meta_fetch)
 
-        # return the item if no master option is included, the item has no master, or if the master option isn't
-        # 'prefer' - meaning it might be 'include'
-        if master_option is None or master_option.lower() != params.ITEM_MASTER_PREFER.lower() or params.ITEM_MASTER_ID not in \
-                item[params.RESOURCE]:
+        # set the 'Item' in the response unless master_option = prefer
+        if params.ITEM_MASTER_ID not in item[params.RESOURCE] or \
+                master_option is None or \
+                master_option.lower() == params.ITEM_MASTER_INCLUDE.lower():
             response["Item"] = item
 
         # extract the master if there is one, and the provided master option is 'include' or 'prefer'
@@ -442,11 +442,7 @@ class AwsDataAPI:
             params.ITEM_MASTER_INCLUDE.lower(),
             params.ITEM_MASTER_PREFER.lower()]:
             master = self._storage_handler.get(id=item[params.RESOURCE][params.ITEM_MASTER_ID])
-
-            if master_option.lower() == params.ITEM_MASTER_PREFER.lower():
-                response["Item"] = master
-            else:
-                response["Master"] = master
+            response["Master"] = master
 
         return response
 
