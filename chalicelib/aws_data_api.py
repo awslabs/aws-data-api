@@ -425,25 +425,27 @@ class AwsDataAPI:
     # get the Resource, which may include or prefer the Item Master
     # @evented(api_operation="GetResource")
     @identity_trace
-    def get(self, id, master_option):
+    def get(self, id, master_option, suppress_meta_fetch: bool = False):
         fetch_id = self._validate_arn_id(id)
-
-        item = self._storage_handler.get(id=fetch_id)
-
         response = {}
+        item = self._storage_handler.get(id=fetch_id, suppress_meta_fetch=suppress_meta_fetch)
+
         # return the item if no master option is included, the item has no master, or if the master option isn't
         # 'prefer' - meaning it might be 'include'
         if master_option is None or master_option.lower() != params.ITEM_MASTER_PREFER.lower() or params.ITEM_MASTER_ID not in \
-                item[
-                    params.RESOURCE]:
+                item[params.RESOURCE]:
             response["Item"] = item
 
         # extract the master if there is one, and the provided master option is 'include' or 'prefer'
         # TODO Test what happens if we have very large Item Master hierarchies here
-        if master_option is not None and [x in master_option.lower() for x in
-                                          [params.ITEM_MASTER_INCLUDE.lower(), params.ITEM_MASTER_PREFER.lower()]]:
-            if params.ITEM_MASTER_ID in item[params.RESOURCE]:
-                master = self._storage_handler.get(id=item[params.RESOURCE][params.ITEM_MASTER_ID])
+        if params.ITEM_MASTER_ID in item[params.RESOURCE] and master_option is not None and master_option.lower() in [
+            params.ITEM_MASTER_INCLUDE.lower(),
+            params.ITEM_MASTER_PREFER.lower()]:
+            master = self._storage_handler.get(id=item[params.RESOURCE][params.ITEM_MASTER_ID])
+
+            if master_option.lower() == params.ITEM_MASTER_PREFER.lower():
+                response["Item"] = master
+            else:
                 response["Master"] = master
 
         return response

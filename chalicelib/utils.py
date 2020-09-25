@@ -15,6 +15,19 @@ _sts_client = None
 _iam_client = None
 
 
+def setup_logging(set_name: str = None):
+    logging.basicConfig()
+    log = logging.getLogger(params.AWS_DATA_API_NAME if set_name is None else set_name)
+    log.setLevel(params.DEFAULT_LOG_LEVEL)
+
+    log_level = os.getenv(params.LOG_LEVEL_PARAM)
+    if log_level is not None:
+        log.info(f"Setting Log Level to {log_level}")
+        log.setLevel(log_level.upper())
+
+    return log
+
+
 def __precheck_config(config_dict):
     # pre-check settings for the pystache template
     if config_dict.get("stage_name").lower() != 'prod' or (
@@ -81,6 +94,10 @@ def __export_template_to_file(template_file, output_file, config_doc, generate_a
 
 def identity_trace(f):
     def resolve_identity(self, *args, **kwargs):
+        self._logger.debug(f"Function: {f.__name__}")
+        self._logger.debug(f"ARGS: {args}")
+        self._logger.debug(f"KWARGS: {kwargs}")
+
         # set the class' caller identity if we can get it
         try:
             if self._caller_identity is None:
@@ -98,19 +115,6 @@ def identity_trace(f):
 def strtobool(val):
     # wrapping distutils as I actually want a boolean
     return _util.strtobool(val) == 1
-
-
-def setup_logging(set_name: str = None):
-    logging.basicConfig()
-    log = logging.getLogger(params.AWS_DATA_API_NAME if set_name is None else set_name)
-    log.setLevel(params.DEFAULT_LOG_LEVEL)
-
-    log_level = os.getenv(params.LOG_LEVEL_PARAM)
-    if log_level is not None:
-        log.info(f"Setting Log Level to {log_level}")
-        log.setLevel(log_level.upper())
-
-    return log
 
 
 # method to generate the ID for a metadata entry

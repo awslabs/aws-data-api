@@ -112,6 +112,7 @@ STORAGE_LOCATION_ATTRIBUTE = "StorageAttribute"
 STORAGE_TABLE = 'StorageTable'
 STRICT_OCCV = 'StrictOCCV'
 STRICT_SCHEMA_VALIDATION = 'StrictSchemaValidation'
+SUPPRESS_ITEM_METADATA_FETCH = "SuppressItemMetadataFetch"
 TABLE_INDEXES = 'TableIndexes'
 TOMBSTONED = "tombstoned"
 UNDERSTANDER_NAME = "Understander"

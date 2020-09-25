@@ -384,7 +384,7 @@ class DataAPIStorageHandler:
             return None
 
     # public method to retrieve a data or metadata Item from its respective table
-    def get(self, id, suppress_meta_fetch=False):
+    def get(self, id, suppress_meta_fetch: bool = False):
         log.debug(f"Storage Handler GET of Item {id}")
         # get the item and the metadata
         item = self._fetch_item(self._resource_table, id)
@@ -392,7 +392,10 @@ class DataAPIStorageHandler:
         if item is None:
             raise ResourceNotFoundException(f"Invalid ID {id}")
         else:
-            if suppress_meta_fetch is False:
+            if suppress_meta_fetch is not None and suppress_meta_fetch is True:
+                log.debug("Suppressing Item Metadata Retrieval")
+                return self._structure_item(id, item, None)
+            else:
                 meta = self._fetch_meta(id)
 
                 return self._structure_item(id, item, meta)

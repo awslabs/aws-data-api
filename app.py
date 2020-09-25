@@ -72,9 +72,6 @@ if use_authorizer is None:
 else:
     print("Using Authorizer %s" % set_authorizer.__name__)
 
-# TODO Get rid of this
-dynamo_resource = boto3.resource('dynamodb', region_name=REGION)
-
 # setup class logger
 log = utils.setup_logging()
 
@@ -107,6 +104,10 @@ def chalice_function(f):
     def wrapper(*args, **kwargs):
         headers = {'Content-Type': 'text/json'}
         try:
+            log.debug(f"Function: {f.__name__}")
+            log.debug(f"ARGS: {args}")
+            log.debug(f"KWARGS: {kwargs}")
+
             result = f(*args, **kwargs)
             status_code = http.HTTPStatus.OK
             body = None
@@ -339,11 +340,19 @@ def process_item_request(api_name, id):
 
     if request.method == 'GET':
         master = None
+        suppress_meta_fetch = False
+
         qp = app.current_request.query_params
+
+        log.debug(f"GET Parameters: {qp}")
+
         if qp is not None and params.ITEM_MASTER_QP in qp:
             master = qp[params.ITEM_MASTER_QP]
 
-        return api.get(id=id, master_option=master)
+        if qp is not None and params.SUPPRESS_ITEM_METADATA_FETCH in qp:
+            suppress_meta_fetch = utils.strtobool(qp.get(params.SUPPRESS_ITEM_METADATA_FETCH))
+
+        return api.get(id=id, master_option=master, suppress_meta_fetch=suppress_meta_fetch)
     elif request.method == 'DELETE':
         return {params.DATA_MODIFIED: api.delete(id=id, **request.json_body)}
     elif request.method == 'HEAD':
