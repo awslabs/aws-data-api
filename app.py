@@ -107,6 +107,8 @@ def chalice_function(f):
             log.debug(f"Function: {f.__name__}")
             log.debug(f"ARGS: {args}")
             log.debug(f"KWARGS: {kwargs}")
+            log.debug(f"Query Params: {app.current_request.query_params}")
+            log.debug(f"JSON Body: {app.current_request.json_body}")
 
             result = f(*args, **kwargs)
             status_code = http.HTTPStatus.OK
