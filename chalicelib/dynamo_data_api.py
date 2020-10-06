@@ -768,7 +768,7 @@ class DataAPIStorageHandler:
 
             # lazy load the _schema and validator if it's not been loaded, if the requestor has asked for strict _schema
             # checking, or if we've hit the validation refresh hit count
-            if not self._schema_loaded or strict_schema or (
+            if not self._schema_loaded or strict_schema or self._schema_validation_refresh_hitcount == 0 or (
                     self._schema_validation_refresh_hitcount is not None and self._schema_dependent_hit_count % self._schema_validation_refresh_hitcount == 0):
                 log.info(f"Reloading Schema Reference from API Metadata. Strict Validation: {strict_schema}")
                 self._refresh_schema()
