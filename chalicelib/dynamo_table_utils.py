@@ -237,7 +237,7 @@ class DynamoTableUtils:
             if 'Attributes' in response:
                 return response['Attributes']
             else:
-                return None
+                return {params.DATA_MODIFIED: True}
 
         except self._dynamo_client.exceptions.ConditionalCheckFailedException:
             raise ResourceNotFoundException()

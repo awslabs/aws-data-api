@@ -107,7 +107,7 @@ def async_provision(api_name: str, stage: str, region: str, logger: logging.Logg
         else:
             raise DetailedException("Unhandled Error Occurred during submission of Async Provisioning Request")
     else:
-        return response.get("StatusCode")
+        return response.get("Status")
 
 
 # method to load an instance of the Data API class from a metadata dict
