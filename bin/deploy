@@ -49,7 +49,7 @@ parser.add_argument('-cognito-details', required=False, dest='cognito_info',
                     help="If Cognito Authorization is to be used, a CSV list of User Pool Name followed by one or more provider ARNs")
 parser.add_argument('-cors-domain', required=False, dest='cors_domain',
                     help="Domain name to allow requests from")
-parser.add_argument('-allow-all-cors', action='store_true', dest='allow_all_cors',
+parser.add_argument('-allow-all-cors', action='store_true', dest='allow_all_cors', default=False,
                     help="Allow requests from all Domains")
 parser.add_argument('-deploy-custom-domain', required=False, dest='custom_domain_info',
                     help="Information for deploying to custom domains. CSV list of Domain Name, ACM Certificate ARN, URL Prefix (optional)")
@@ -90,6 +90,12 @@ if args.custom_domain_info is not None:
             config_doc["custom_url_prefix"] = domain_info[2]
 
 utils.generate_configuration_files(config_doc, args.action, args.verbose)
+
+if args.allow_all_cors is False and args.custom_domain_info is None:
+    # remove the cors config
+    cors_path = "chalicelib/cors.json"
+    if os.path.isfile(cors_path):
+        os.remove(cors_path)
 
 if args.action == "deploy":
     # install dependencies

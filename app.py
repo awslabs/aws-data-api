@@ -89,13 +89,17 @@ search_flow_verified = False
 
 # load the cors config
 cors_config = None
-with open("chalicelib/cors.json", "r") as f:
-    cors_config = json.load(f)
+cors = None
+try:
+    with open("chalicelib/cors.json", "r") as f:
+        cors_config = json.load(f)
 
-if cors_config.get("AllowAllCORS") == "True":
-    cors = True
-else:
-    cors = CORSConfig(**cors_config.get("custom"))
+    if cors_config.get("AllowAllCORS") == "True":
+        cors = True
+    else:
+        cors = CORSConfig(**cors_config.get("custom"))
+except FileNotFoundError:
+    pass
 
 
 # using a functools wrapper here as normal python decorators aren't compatible with the call signature of chalice
@@ -111,6 +115,9 @@ def chalice_function(f):
             log.debug(f"JSON Body: {app.current_request.json_body}")
 
             result = f(*args, **kwargs)
+
+            log.debug(f"Result of Data API function call: {result}")
+
             status_code = http.HTTPStatus.OK
             body = None
 
@@ -156,6 +163,9 @@ def chalice_function(f):
             return Response(body=str({"message": ge.message, "detail": ge.detail}),
                             headers={'Content-Type': 'text/json'},
                             status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            log.error(str(e))
+            raise e
 
     return wrapper
 
@@ -173,7 +183,7 @@ def _add_api_defaults(api_metadata):
 # TODO Can we add a method to query what are the available stages?
 @app.route('/namespaces', methods=['GET'], authorizer=use_authorizer, cors=cors)
 @chalice_function
-def registry():
+def namespaces():
     return dapi.get_registry(REGION, STAGE)
 
 
@@ -185,7 +195,7 @@ def get_version():
 
 @app.route('/data-apis', methods=['GET'], authorizer=use_authorizer, cors=cors)
 @chalice_function
-def get_all():
+def get_all_data_apis():
     return utils.get_all_data_apis()
 
 
@@ -218,11 +228,16 @@ def get_api_status(api_name):
 # method to get and create API level metadata - not per-item
 @app.route('/{api_name}/info', methods=['GET', 'PUT'], authorizer=use_authorizer, cors=cors)
 @chalice_function
-def get_table_metadata(api_name):
+def namespace_metadata(api_name):
     request = app.current_request
 
     if request.method == 'GET':
-        return api_metadata_handler.get_api_metadata(api_name=api_name, stage=STAGE)
+        attr_filter = None
+        if request.query_params is not None and params.ATTRIBUTE_FILTER_PARAM in request.query_params:
+            attr_filter = request.query_params.get(params.ATTRIBUTE_FILTER_PARAM).split(',')
+
+        return api_metadata_handler.get_api_metadata(api_name=api_name, stage=STAGE,
+                                                     attribute_filters=attr_filter)
     else:
         response = api_metadata_handler.update_metadata(api_name=api_name, stage=STAGE, updates=request.json_body)
 
@@ -310,7 +325,7 @@ def process_general_request(api_name):
     primary_key_attribute = api.get_primary_key()
     item_id = None
 
-    if any([x in app.current_request.method for x in ['GET', 'HEAD']]):
+    if app.current_request.method in ['GET', 'HEAD']:
         if primary_key_attribute in app.current_request.query_params:
             item_id = app.current_request.query_params.get(primary_key_attribute)
     else:
@@ -368,7 +383,7 @@ def process_item_request(api_name, id):
 # method to restore an object from deletion
 @app.route('/{api_name}/{id}/restore', methods=['PUT'], authorizer=use_authorizer, cors=cors)
 @chalice_function
-def process_restore_request(api_name, id):
+def restore(api_name, id):
     return {params.DATA_MODIFIED: True,
             params.RESPONSE_BODY: api_cache.get(api_name).restore(id=id)}
 
@@ -376,14 +391,14 @@ def process_restore_request(api_name, id):
 # method to retrieve metadata only for an item
 @app.route('/{api_name}/{id}/meta', methods=['GET'], authorizer=use_authorizer, cors=cors)
 @chalice_function
-def process_meta_request(api_name, id):
+def metadata(api_name, id):
     return api_cache.get(api_name).get_metadata(id=id)
 
 
 # method to paginate a bunch of items
 @app.route('/{api_name}/list', methods=['GET'], authorizer=use_authorizer, cors=cors)
 @chalice_function
-def process_list(api_name):
+def list_request(api_name):
     query_params = app.current_request.query_params
 
     if query_params is None:
@@ -402,7 +417,7 @@ def get_endpoints(api_name):
 # method to fetch all Items that are descended from the supplied Item
 @app.route('/{api_name}/{id}/downstream', methods=['GET'], authorizer=use_authorizer, cors=cors)
 @chalice_function
-def get_downstream(api_name, id):
+def downstream_search(api_name, id):
     request = app.current_request
     search_depth = None
     if request.query_params is not None and 'search_depth' in request.query_params:
@@ -413,7 +428,7 @@ def get_downstream(api_name, id):
 # method to fetch all Items that were used to create Items which led to the supplied Item
 @app.route('/{api_name}/{id}/upstream', methods=['GET'], authorizer=use_authorizer, cors=cors)
 @chalice_function
-def get_upstream(api_name, id):
+def upstream_search(api_name, id):
     request = app.current_request
     search_depth = None
     if request.query_params is not None and 'search_depth' in request.query_params:

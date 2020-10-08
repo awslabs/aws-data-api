@@ -35,6 +35,7 @@ class ApiMetadata:
             if attribute_filters is None:
                 return meta
             else:
+                self._logger.debug(f"Applying Filter for Attributes: {attribute_filters}")
                 # apply the attribute filters
                 out = {}
                 for f in attribute_filters:
