@@ -236,11 +236,13 @@ class AwsDataAPI:
         log.info(f"AWS Data API for {self._catalog_database}.{self._table_name} Online.")
 
     # method which writes a set of object references to the Gremlin helper class
-    def _put_references(self, id, reference_doc):
+    def _put_references(self, id: str, reference_doc: list):
         g = self._gremlin_endpoint
         if g is not None:
             from_id = utils.get_arn(id, self._table_name, self._deployed_account)
 
+            ctr = 0
+            exceptions = []
             for r in reference_doc:
                 if params.RESOURCE not in r:
                     raise InvalidArgumentsException(f"Malformed Reference: {r}. Must Contain a {params.RESOURCE}")
@@ -250,7 +252,21 @@ class AwsDataAPI:
                     # remove the resource and ID keys so we can use the rest of the document for extra properties
                     del r[params.RESOURCE]
 
-                    g.create_relationship(label=params.REFERENCES, from_id=from_id, to_id=to_id, extra_properties=r)
+                    try:
+                        g.create_relationship(label=params.REFERENCES, from_id=from_id, to_id=to_id, extra_properties=r)
+                        ctr += 1
+                    except Exception as e:
+                        exceptions.append({
+                            "ID": to_id,
+                            "Message": e.message
+                        })
+
+            response = {"ReferenceCount": ctr}
+
+            if len(exceptions) > 0:
+                response["Exceptions"] = exceptions
+
+            return response
         else:
             raise UnimplementedFeatureException(NO_GREMLIN)
 
@@ -477,12 +493,11 @@ class AwsDataAPI:
         fetch_id = self._validate_arn_id(id)
         response = None
 
-        # TODO move to Data API
         if params.REFERENCES in kwargs:
             log.debug("Creating Reference Links")
-            self._put_references(id, kwargs.get(params.REFERENCES))
+            response.add(self._put_references(id, kwargs.get(params.REFERENCES)))
 
-        response = self._storage_handler.update_item(caller_identity=self._simple_identity, id=fetch_id, **kwargs)
+        response.add(self._storage_handler.update_item(caller_identity=self._simple_identity, id=fetch_id, **kwargs))
 
         return response
 
