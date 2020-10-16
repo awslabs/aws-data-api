@@ -1,3 +1,8 @@
+_AWS Internal Information_
+
+aws-data-api-interest channel on slack
+
+----
 # AWS Data API's
 
 AWS Data API's offer you the ability to create data oriented application API's that deliver the speed, scalability, reliability, and security of a sophisticated NOSQL platform with zero coding or configuration, and no servers to manage. In seconds, you can create a new Data API Namespace that includes strong data models, natural language search, and sophisticated data lineage tracking, presented as an HTTPS REST API.
