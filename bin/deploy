@@ -63,12 +63,12 @@ args = parser.parse_args()
 config_doc = vars(args)
 
 # parse and pivot subnets and security groups
-config_doc["subnets"] = json.dumps(args.subnets.split(","))
-config_doc["sgs"] = json.dumps(args.sgs.split(","))
+config_doc["subnets"] = json.dumps(args.subnets.strip().split(","))
+config_doc["sgs"] = json.dumps(args.sgs.strip().split(","))
 
 # load cognito detail into config
 if args.auth == params.AUTHORIZER_COGNITO:
-    cognito_detail = args.cognito_info.split(',')
+    cognito_detail = args.cognito_info.strip().split(',')
 
     if len(cognito_detail) < 2:
         raise Exception("Cognito Details must include User Pool Name and on or more Provider ARNS")
@@ -78,7 +78,7 @@ if args.auth == params.AUTHORIZER_COGNITO:
 
 # load custom domain information into the config
 if args.custom_domain_info is not None:
-    domain_info = args.custom_domain_info.split(',')
+    domain_info = args.custom_domain_info.strip().split(',')
 
     if len(domain_info) < 2:
         raise Exception(
