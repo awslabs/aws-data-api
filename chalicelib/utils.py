@@ -81,7 +81,8 @@ def __export_template_to_file(template_file, output_file, config_doc, generate_a
     rendered = renderer.render(template, config_doc)
 
     if generate_action != 'dry-run':
-        with open(output_file, 'w') as out:
+        # open the file for writing
+        with open(output_file, 'w+') as out:
             out.write(rendered)
 
         out.close()
