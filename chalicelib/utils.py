@@ -57,6 +57,9 @@ def generate_configuration_files(config_dict, generate_action, verbose):
     __precheck_config(config_dict)
 
     # generate the config.json file to .chalice
+    if not os.path.exists(".chalice"):
+        os.mkdir(".chalice")
+        
     __export_template_to_file("template/config.pystache", ".chalice/config.json", config_dict, generate_action, verbose)
 
     # generate the iam policy
