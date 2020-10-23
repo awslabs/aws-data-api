@@ -21,7 +21,7 @@ Data API Features include:
 * __Flexible Queries__
 	* Data API’s provide native indexing of both Data and Metadata attributes
 	* Reference graph searching
-* ElasticSearch Integration
+* __ElasticSearch Integration__
 	* You can supply an ElasticSearch cluster which will be used to automatically index all Data & Metadata, and augment the query API
 * __Data Lake Integration__
 	* API Namespaces are automatically registered with AWS Glue, and you can write Athena queries against your Data
