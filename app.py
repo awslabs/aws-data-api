@@ -112,7 +112,7 @@ def chalice_function(f):
             log.debug(f"ARGS: {args}")
             log.debug(f"KWARGS: {kwargs}")
             log.debug(f"Query Params: {app.current_request.query_params}")
-            log.debug(f"JSON Body: {app.current_request.json_body}")
+            log.debug(f"JSON Body: {app.current_request.raw_body}")
 
             result = f(*args, **kwargs)
 
@@ -271,7 +271,7 @@ def run_understanding(api_name, id):
 @app.route('/{api_name}/schema/{schema_type}', methods=['GET', 'PUT', 'DELETE'], authorizer=use_authorizer, cors=cors)
 @chalice_function
 def schema(api_name, schema_type):
-    if schema_type is None or schema_type.lower() not in [params.RESOURCE, params.METADATA]:
+    if schema_type is None or schema_type.lower() not in [params.RESOURCE.lower(), params.METADATA.lower()]:
         raise BadRequestError("Must supply a schema type of Resource or Metadata")
 
     request = app.current_request

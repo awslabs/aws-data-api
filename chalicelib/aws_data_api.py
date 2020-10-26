@@ -491,13 +491,14 @@ class AwsDataAPI:
     @identity_trace
     def update_item(self, id, **kwargs):
         fetch_id = self._validate_arn_id(id)
-        response = None
+        response = {}
 
         if params.REFERENCES in kwargs:
             log.debug("Creating Reference Links")
-            response.add(self._put_references(id, kwargs.get(params.REFERENCES)))
+            response[params.REFERENCES] = self._put_references(id, kwargs.get(params.REFERENCES))
 
-        response.add(self._storage_handler.update_item(caller_identity=self._simple_identity, id=fetch_id, **kwargs))
+        response[params.ITEM] = self._storage_handler.update_item(caller_identity=self._simple_identity, id=fetch_id,
+                                                                  **kwargs)
 
         return response
 
