@@ -583,7 +583,8 @@ class AwsDataAPI:
     def put_schema(self, schema_type, schema):
         return self._api_metadata_handler.put_schema(api_name=self._api_name, stage=self._deployment_stage,
                                                      schema_type=schema_type,
-                                                     caller_identity=self._simple_identity, schema=schema)
+                                                     caller_identity=self._simple_identity, schema=schema).get(
+            params.DATA_MODIFIED)
 
     # Remove the JSON Schema from the Namespace for Resources or Metadata
     # @evented(api_operation="DeleteSchema")

@@ -234,11 +234,11 @@ class DynamoTableUtils:
             self._log.debug(args)
             response = self._control_table.update_item(**args)
 
+            return_value = {params.DATA_MODIFIED: True}
             if 'Attributes' in response:
-                return response['Attributes']
-            else:
-                return {params.DATA_MODIFIED: True}
+                return_value['Attributes'] = response.get('Attributes')
 
+            return return_value
         except self._dynamo_client.exceptions.ConditionalCheckFailedException:
             raise ResourceNotFoundException()
         except Exception as e:

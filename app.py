@@ -271,7 +271,7 @@ def run_understanding(api_name, id):
 @app.route('/{api_name}/schema/{schema_type}', methods=['GET', 'PUT', 'DELETE'], authorizer=use_authorizer, cors=cors)
 @chalice_function
 def schema(api_name, schema_type):
-    if schema_type is None or not any([x.lower() in schema_type.lower() for x in [params.RESOURCE, params.METADATA]]):
+    if schema_type is None or schema_type.lower() not in [params.RESOURCE, params.METADATA]:
         raise BadRequestError("Must supply a schema type of Resource or Metadata")
 
     request = app.current_request
@@ -283,8 +283,7 @@ def schema(api_name, schema_type):
         delete_performed = api.remove_schema(schema_type)
         return {params.DATA_MODIFIED: delete_performed}
     else:
-        return {params.DATA_MODIFIED: True,
-                params.RESPONSE_BODY: api.put_schema(schema_type=schema_type,
+        return {params.DATA_MODIFIED: api.put_schema(schema_type=schema_type,
                                                      schema=app.current_request.json_body)}
 
 
