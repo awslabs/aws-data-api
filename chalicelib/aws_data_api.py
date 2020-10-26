@@ -490,15 +490,27 @@ class AwsDataAPI:
     # @evented(api_operation="Update")
     @identity_trace
     def update_item(self, id, **kwargs):
-        fetch_id = self._validate_arn_id(id)
         response = {}
+
+        def _wrap_response(type, type_res):
+            response[type] = {
+                params.DATA_MODIFIED: True if type_res is not None else False
+            }
+
+            if type_res is not None and "Messages" in type_res:
+                response["Messages"] = type_res.get("Messages")
+
+        fetch_id = self._validate_arn_id(id)
 
         if params.REFERENCES in kwargs:
             log.debug("Creating Reference Links")
-            response[params.REFERENCES] = self._put_references(id, kwargs.get(params.REFERENCES))
+            _wrap_response(params.REFERENCES, self._put_references(id, kwargs.get(params.REFERENCES)))
 
-        response[params.ITEM] = self._storage_handler.update_item(caller_identity=self._simple_identity, id=fetch_id,
-                                                                  **kwargs)
+        # update the item, which may update metadata and resources
+        item_response = self._storage_handler.update_item(caller_identity=self._simple_identity, id=fetch_id,
+                                                          **kwargs)
+        _wrap_response(params.METADATA, item_response.get(params.METADATA))
+        _wrap_response(params.RESOURCE, item_response.get(params.RESOURCE))
 
         return response
 

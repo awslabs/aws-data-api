@@ -744,6 +744,10 @@ class DataAPIStorageHandler:
 
             self._do_update(self._metadata_table, resource_id, kwargs.get(params.METADATA), caller_identity)
 
+            response[params.METADATA] = {
+                params.DATA_MODIFIED: True
+            }
+
         set_constraints = None
         if params.CONSTRAINTS in kwargs:
             set_constraints = kwargs.get(params.CONSTRAINTS)
@@ -792,6 +796,10 @@ class DataAPIStorageHandler:
                                      caller_identity=caller_identity, item_version=item_version, is_resource_table=True,
                                      update_constraints=set_constraints)
 
+            resource_response = {
+                params.DATA_MODIFIED: True
+            }
+
             # add an update warning if the update affected a non-item-master record
             item_master_id = None
             if update is not None and 'Attributes' in update:
@@ -807,10 +815,9 @@ class DataAPIStorageHandler:
                     params.ITEM_MASTER_ID: item_master_id
                 }
 
-                if params.WARNING in response:
-                    response[params.WARNING].append(warning)
-                else:
-                    response[params.WARNING] = [warning]
+                resource_response[params.WARNING] = [warning]
+
+            response[params.RESOURCE] = resource_response
 
         return response
 

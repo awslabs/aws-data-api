@@ -112,7 +112,7 @@ def chalice_function(f):
             log.debug(f"ARGS: {args}")
             log.debug(f"KWARGS: {kwargs}")
             log.debug(f"Query Params: {app.current_request.query_params}")
-            log.debug(f"JSON Body: {app.current_request.raw_body}")
+            log.debug(f"Raw Body: {app.current_request.raw_body}")
 
             result = f(*args, **kwargs)
 
@@ -360,8 +360,6 @@ def process_item_request(api_name, id):
 
         qp = app.current_request.query_params
 
-        log.debug(f"GET Parameters: {qp}")
-
         if qp is not None and params.ITEM_MASTER_QP in qp:
             master = qp[params.ITEM_MASTER_QP]
 
@@ -374,8 +372,7 @@ def process_item_request(api_name, id):
     elif request.method == 'HEAD':
         return api.check(id=id)
     elif request.method == 'PUT':
-        return {params.DATA_MODIFIED: True,
-                "Messages": api.update_item(id=id, **request.json_body)}
+        return api.update_item(id=id, **request.json_body)
 
 
 # TODO Add a non-id based URL path for this operation
