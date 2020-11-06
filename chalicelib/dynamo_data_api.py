@@ -508,7 +508,11 @@ class DataAPIStorageHandler:
             try:
                 log.debug("Performing Item Restore")
                 log.debug(args)
+
                 self._resource_table.update_item(**args)
+
+                log.debug("Restore complete. Fetching latest version of item")
+                return self._fetch_item(self._resource_table, id)
             except self._dynamo_client.exceptions.ConditionalCheckFailedException:
                 raise InvalidArgumentsException("Unable to Restore Tombstoned Resources or Resource is not Deleted")
 
@@ -866,8 +870,9 @@ class DataAPIStorageHandler:
 
                     update_response.append({
                         self._pk_name: str(v),
-                        "Updated": True if response is not None and 'ConsumedCapacity' in response and response[
-                            'ConsumedCapacity']['CapacityUnits'] > 0 else False
+                        params.DATA_MODIFIED: True if response is not None and 'ConsumedCapacity' in response and
+                                                      response.get('ConsumedCapacity').get(
+                                                          'CapacityUnits') > 0 else False
                     })
 
                 return update_response
