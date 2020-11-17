@@ -372,10 +372,22 @@ class DataAPIStorageHandler:
             raise ResourceNotFoundException()
 
     # method to fetch an item by ID from the data or metadata API tables
-    def _fetch_item(self, table, id, force=False):
-        item = table.get_item(Key={
+    def _fetch_item(self, table, id, force=False, only_attributes: list = None):
+        args = {'Key': {
             self._pk_name: id
-        })
+        }
+        }
+
+        if only_attributes is not None:
+            set_whitelist = only_attributes.copy()
+            # add the primary key, as the response will be nonsensical without it
+            set_whitelist.append(self._pk_name)
+
+            log.debug(f'Adding attribute whitelist {set_whitelist}')
+            args['AttributesToGet'] = set_whitelist
+
+        log.debug(f'Base Fetch from {table} Args: {args}')
+        item = table.get_item(**args)
 
         if params.ITEM in item:
             if params.DELETED not in item[params.ITEM] or item[params.ITEM][params.DELETED] == 0 or force:
@@ -384,14 +396,22 @@ class DataAPIStorageHandler:
             return None
 
     # public method to retrieve a data or metadata Item from its respective table
-    def get(self, id, suppress_meta_fetch: bool = False):
+    def get(self, id, suppress_meta_fetch: bool = False, only_attributes: list = None,
+            not_attributes: list = None):
         log.debug(f"Storage Handler GET of Item {id}")
-        # get the item and the metadata
-        item = self._fetch_item(self._resource_table, id)
+
+        item = self._fetch_item(table=self._resource_table, id=id, only_attributes=only_attributes)
 
         if item is None:
             raise ResourceNotFoundException(f"Invalid ID {id}")
         else:
+            # filter out not_attributes
+            if not_attributes is not None:
+                log.debug(f"Filtering Attributes {not_attributes}")
+                for attr in not_attributes:
+                    if attr in item:
+                        del item[attr]
+
             if suppress_meta_fetch is not None and suppress_meta_fetch is True:
                 log.debug("Suppressing Item Metadata Retrieval")
                 return self._structure_item(id, item, None)

@@ -356,6 +356,8 @@ def process_item_request(api_name, id):
 
     if request.method == 'GET':
         master = None
+
+        # determine if metadata should be included in the request
         suppress_meta_fetch = False
 
         qp = app.current_request.query_params
@@ -366,7 +368,18 @@ def process_item_request(api_name, id):
         if qp is not None and params.SUPPRESS_ITEM_METADATA_FETCH in qp:
             suppress_meta_fetch = utils.strtobool(qp.get(params.SUPPRESS_ITEM_METADATA_FETCH))
 
-        return api.get(id=id, master_option=master, suppress_meta_fetch=suppress_meta_fetch)
+        # determine if an attribute whitelist has been included
+        only_attributes = None
+        if qp is not None and params.WHITELIST_ATTRIBUTES in qp:
+            only_attributes = qp.get(params.WHITELIST_ATTRIBUTES).split(',')
+
+        # determine if an attribute blacklist has been included
+        not_attributes = None
+        if qp is not None and params.BLACKLIST_ATTRIBUTES in qp:
+            not_attributes = qp.get(params.BLACKLIST_ATTRIBUTES).split(',')
+
+        return api.get(id=id, master_option=master, suppress_meta_fetch=suppress_meta_fetch,
+                       only_attributes=only_attributes, not_attributes=not_attributes)
     elif request.method == 'DELETE':
         return {params.DATA_MODIFIED: api.delete(id=id, **request.json_body)}
     elif request.method == 'HEAD':

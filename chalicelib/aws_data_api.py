@@ -441,10 +441,12 @@ class AwsDataAPI:
     # get the Resource, which may include or prefer the Item Master
     # @evented(api_operation="GetResource")
     @identity_trace
-    def get(self, id, master_option, suppress_meta_fetch: bool = False):
+    def get(self, id, master_option, suppress_meta_fetch: bool = False, only_attributes: list = None,
+            not_attributes: list = None):
         fetch_id = self._validate_arn_id(id)
         response = {}
-        item = self._storage_handler.get(id=fetch_id, suppress_meta_fetch=suppress_meta_fetch)
+        item = self._storage_handler.get(id=fetch_id, suppress_meta_fetch=suppress_meta_fetch,
+                                         only_attributes=only_attributes, not_attributes=not_attributes)
 
         # set the 'Item' in the response unless master_option = prefer
         if params.ITEM_MASTER_ID not in item[params.RESOURCE] or \
