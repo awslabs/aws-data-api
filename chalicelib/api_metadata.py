@@ -11,15 +11,17 @@ class ApiMetadata:
     _table_name = None
     _dynamo_helper = None
     _api_control_table = None
+    _kms_key_arn = None
 
-    def __init__(self, region, logger):
+    def __init__(self, region, logger, kms_key_arn: str = None):
         self._region = region
         self._logger = logger
+        self._kms_key_arn = kms_key_arn
         self._dynamo_helper, self._api_control_table = self._get_api_control_table()
 
     def _get_api_control_table(self):
         dynamo_helper = DynamoTableUtils(region=self._region, logger=self._logger)
-        api_control_table = dynamo_helper.verify_control_table()
+        api_control_table = dynamo_helper.verify_control_table(kms_key_arn=self._kms_key_arn)
 
         return dynamo_helper, api_control_table
 

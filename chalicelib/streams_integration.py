@@ -86,7 +86,8 @@ class StreamsIntegration:
             else:
                 raise e
 
-    def _verify_es_delivery_stream(self, index_prefix=None, firehose_role_arn=None, failure_bucket=None):
+    def _verify_es_delivery_stream(self, index_prefix=None, firehose_role_arn=None, failure_bucket=None,
+                                   kms_key_arn: str = None):
         if firehose_role_arn is not None and failure_bucket is not None:
             # create the delivery stream with routing to ElasticSearch
             name = f'{params.AWS_DATA_API_NAME}-{self._table_name}-ES-{index_prefix}'
@@ -127,6 +128,12 @@ class StreamsIntegration:
                 }
             }
 
+            if kms_key_arn is not None:
+                create['DeliveryStreamEncryptionConfigurationInput'] = {
+                    'KeyARN': kms_key_arn,
+                    'KeyType': 'CUSTOMER_MANAGED_CMK'
+                }
+
             try:
                 response = self._fh_client.create_delivery_stream(**create)
                 return response[DELIVERY_STREAM_ARN]
@@ -156,7 +163,8 @@ class StreamsIntegration:
         else:
             raise ResourceNotFoundException(f'ElasticSearch Domain {self._es_domain_name} Not Found')
 
-    def configure_search_flow(self, endpoints, es_domain_name, firehose_delivery_role_arn, failure_record_bucket):
+    def configure_search_flow(self, endpoints, es_domain_name, firehose_delivery_role_arn, failure_record_bucket,
+                              kms_key_arn: str = None):
         response = self._validate_es_domain(es_domain_name)
         if response is not None:
             self._es_domain = response
@@ -172,7 +180,7 @@ class StreamsIntegration:
         for s in stream_arn_list:
             # verify the firehose delivery stream with routing to the ES domain
             delivery_stream = self._verify_es_delivery_stream(s['Type'], firehose_delivery_role_arn,
-                                                              failure_record_bucket)
+                                                              failure_record_bucket, kms_key_arn)
 
             # verify the event source that wires the table's stream to the ES indexing function
             self._verify_event_source(stream_arn=s['ARN'])

@@ -181,7 +181,7 @@ class AwsDataAPI:
             log.setLevel(log_level.upper())
 
         # create the API metadata handler
-        self._api_metadata_handler = ApiMetadata(self._region, self._logger)
+        self._api_metadata_handler = ApiMetadata(self._region, self._logger, kwargs.get(params.KMS_KEY_ARN))
 
         log.debug("Instantiating new Data API Namespace")
         log.debug(kwargs)

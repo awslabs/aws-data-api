@@ -103,28 +103,37 @@ class DynamoTableUtils:
             return None
 
     # method to create/confirm the status of a given dynamoDB table
-    def verify_dynamo_table(self, table_name, attributes, key_schema):
+    def verify_dynamo_table(self, table_name, attributes, key_schema, kms_key_arn: str = None):
         try:
             self._dynamo_client.describe_table(TableName=table_name)
             return self._dynamo_resource.Table(table_name)
         except self._dynamo_client.exceptions.ResourceNotFoundException:
             self._log.info(f'Creating new DynamoDB table: {table_name}')
 
-            self._dynamo_client.create_table(AttributeDefinitions=attributes,
-                                             TableName=table_name,
-                                             KeySchema=key_schema,
-                                             BillingMode=params.PAY_PER_REQUEST,
-                                             StreamSpecification={
-                                                 'StreamEnabled': True,
-                                                 'StreamViewType': 'NEW_AND_OLD_IMAGES'
-                                             }
-                                             )
+            args = {
+                'AttributeDefinitions': attributes,
+                'TableName': table_name,
+                'KeySchema': key_schema,
+                'BillingMode': params.PAY_PER_REQUEST,
+                'StreamSpecification': {
+                    'StreamEnabled': True,
+                    'StreamViewType': 'NEW_AND_OLD_IMAGES'
+                }
+            }
+
+            if kms_key_arn is not None:
+                args['SSESpecification'] = {
+                    'Enabled': True,
+                    'SSEType': 'KMS',
+                    'KMSMasterKeyId': kms_key_arn
+                }
+            self._dynamo_client.create_table(**args)
             self.wait_until_table_active(table_name)
 
             return self._dynamo_resource.Table(table_name)
 
     # method to create/confirm the control table for the system, which stores schemas, table metadata, etc
-    def verify_control_table(self):
+    def verify_control_table(self, kms_key_arn: str = None):
         control_attributes = [
             {
                 'AttributeName': params.CONTROL_HASH,
@@ -146,7 +155,7 @@ class DynamoTableUtils:
                 'KeyType': 'RANGE'
             }
         ]
-        return self.verify_dynamo_table(params.CONTROL_TABLE, control_attributes, control_key)
+        return self.verify_dynamo_table(params.CONTROL_TABLE, control_attributes, control_key, kms_key_arn)
 
     # method to retrieve a control table item
     def get_item(self, table, key):

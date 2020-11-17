@@ -477,11 +477,12 @@ def indexing_lambda(event, context):
 
             # verify that the delivery streams are in place
             es_indexer.configure_search_flow(endpoints=api_metadata.get("SearchConfig").get("DeliveryStreams"),
-                                             es_domain_name=event[params.ES_DOMAIN],
-                                             firehose_delivery_role_arn=event[
-                                                 params.FIREHOSE_DELIVERY_ROLE_ARN],
-                                             failure_record_bucket=event[
-                                                 params.DELIVERY_STREAM_FAILURE_BUCKET]
+                                             es_domain_name=event.get(params.ES_DOMAIN),
+                                             firehose_delivery_role_arn=event.get(
+                                                 params.FIREHOSE_DELIVERY_ROLE_ARN),
+                                             failure_record_bucket=event.get(
+                                                 params.DELIVERY_STREAM_FAILURE_BUCKET),
+                                             kms_key_arn=event.get(params.KMS_KEY_ARN)
                                              )
             es_indexer = StreamsIntegration(STAGE, api_metadata.get("SearchConfig"))
             search_flow_verified = True
@@ -538,11 +539,12 @@ def provisioning_lambda(event, context):
     if params.ES_DOMAIN in event:
         try:
             search_config = es_indexer.configure_search_flow(endpoints=api.get_endpoints(),
-                                                             es_domain_name=event[params.ES_DOMAIN],
-                                                             firehose_delivery_role_arn=event[
-                                                                 params.FIREHOSE_DELIVERY_ROLE_ARN],
-                                                             failure_record_bucket=event[
-                                                                 params.DELIVERY_STREAM_FAILURE_BUCKET]
+                                                             es_domain_name=event.get(params.ES_DOMAIN),
+                                                             firehose_delivery_role_arn=event.get(
+                                                                 params.FIREHOSE_DELIVERY_ROLE_ARN),
+                                                             failure_record_bucket=event.get(
+                                                                 params.DELIVERY_STREAM_FAILURE_BUCKET),
+                                                             kms_key_arn=event.get(params.KMS_KEY_ARN)
                                                              )
         except KeyError:
             raise BadRequestError(

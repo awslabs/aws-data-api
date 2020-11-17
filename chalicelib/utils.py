@@ -59,7 +59,7 @@ def generate_configuration_files(config_dict, generate_action, verbose):
     # generate the config.json file to .chalice
     if not os.path.exists(".chalice"):
         os.mkdir(".chalice")
-        
+
     __export_template_to_file("template/config.pystache", ".chalice/config.json", config_dict, generate_action, verbose)
 
     # generate the iam policy
@@ -432,6 +432,10 @@ def run_glue_export(table_name, s3_export_path, kms_key_arn, read_pct, log_path,
             return {
                 "JobName": job_name,
                 "JobRunId": response['JobRunId']
+            }
+        else:
+            return {
+                "Message": "Unable to start Glue Export or other error"
             }
     except glue_client.exceptions.ConcurrentRunsExceededException as ce:
         raise DetailedException(message="Export Job Already Running")
