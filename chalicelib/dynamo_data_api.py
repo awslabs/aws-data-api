@@ -13,6 +13,7 @@ from chalicelib.dynamo_table_utils import DynamoTableUtils
 import chalicelib.dynamo_table_utils as dtu
 import chalicelib.utils as utils
 import chalicelib.parameters as params
+from chalicelib.schema_cache_entry import SchemaCacheEntry
 
 log = None
 
@@ -53,10 +54,7 @@ class DataAPIStorageHandler:
     _table_indexes = []
     _meta_indexes = []
     _schema_loaded = False
-    _schema = None
-    _schema_validator = None
-    _schema_validation_refresh_hitcount = None
-    _schema_dependent_hit_count = 0
+    _schema_cache = {}
     _crawler_rolename = None
     _catalog_database = None
     _allow_non_itemmaster_writes = None
@@ -737,18 +735,49 @@ class DataAPIStorageHandler:
             raise ConstraintViolationException(f"Conditional Check Violated: {args[dtu.CE]}")
 
     # method which implements a json schema refresh
-    def _refresh_schema(self):
+    def _refresh_schema(self, schema_type):
         try:
-            self._schema = self._dynamo_utils.get_control_item(table_ref=self._control_table,
-                                                               api_name=self._table_name,
-                                                               control_type=params.CONTROL_TYPE_RESOURCE_SCHEMA)
+            target = params.CONTROL_TYPE_RESOURCE_SCHEMA if schema_type == params.RESOURCE else params.CONTROL_TYPE_METADATA_SCHEMA
+            entry = self._dynamo_utils.get_control_item(table_ref=self._control_table,
+                                                         api_name=self._table_name,
+                                                         control_type=target)
+            schema = None
+            if entry is not None:
+                schema = entry.get(target)
 
-            if self._schema is not None:
-                self._schema_validator = fastjsonschema.compile(self._schema)
-                self._schema_loaded = True
-                log.info(f"Loaded new Schema Validator for {self._table_name}")
+            if schema is not None:
+                cache_entry = SchemaCacheEntry(entry_type=schema_type, schema=schema,
+                                               refresh_count=self._schema_validation_refresh_hitcount)
+                self._schema_cache[schema_type] = cache_entry
+                log.info(f"Loaded new {schema_type} Schema Validator for {self._table_name}")
+            else:
+                # place an empty cache entry indicating that there is no schema for this type
+                log.debug(f"No {schema_type} Schema found")
+                self._schema_cache[schema_type] = None
         except Exception as e:
-            raise InvalidArgumentsException(f"Error during compilation of API Json Schema: {e}")
+            raise InvalidArgumentsException(f"Error during creation of {schema_type} Json Schema: {e}")
+
+    def _validate_schema(self, item, schema_type: str, strict_schema: bool = False):
+        log.debug(f'Validating {schema_type} Schema. Strict: {strict_schema}')
+
+        # reload the schema from source configuration if there is no cache entry, if it's passed its refresh_hitcount,
+        # or if strict schema checking is enabled
+        if strict_schema is True or \
+                schema_type not in self._schema_cache or \
+                (self._schema_cache.get(schema_type) is not None and self._schema_cache.get(
+                    schema_type).needs_refresh()):
+            log.info(f"Reloading Schema Reference from API Metadata. Strict Validation: {strict_schema}")
+            self._refresh_schema(schema_type)
+        else:
+            log.debug("Not reloading Schema from API Metadata")
+
+        # get the schema from the cache
+        schema = self._schema_cache.get(schema_type)
+
+        if schema is not None:
+            schema.validate_item(item)
+        else:
+            log.debug(f"No validation performed due to no {schema_type} Schema registered")
 
     # public method to perform an update on a data API item
     def update_item(self, caller_identity, id, **kwargs):
@@ -761,6 +790,16 @@ class DataAPIStorageHandler:
         valid_topargs = [params.METADATA, params.RESOURCE, params.REFERENCES]
         if not any(x in kwargs for x in valid_topargs):
             raise InvalidArgumentsException("Update Request must include {0}, {1], or {2}" % tuple(valid_topargs))
+
+        # validate the schema for metadata and resource
+        strict_schema = False if params.STRICT_SCHEMA_VALIDATION not in kwargs else utils.strtobool(kwargs.get(
+            params.STRICT_SCHEMA_VALIDATION))
+
+        # validate the JSON schemas for the modifications
+        self._validate_schema(item=kwargs.get(params.RESOURCE), schema_type=params.RESOURCE,
+                              strict_schema=strict_schema)
+        self._validate_schema(item=kwargs.get(params.METADATA), schema_type=params.METADATA,
+                              strict_schema=strict_schema)
 
         # process the metadata update
         if params.METADATA in kwargs:
@@ -791,27 +830,8 @@ class DataAPIStorageHandler:
             if params.ITEM_MASTER_ID in item:
                 raise InvalidArgumentsException(f"Cannot Update {params.ITEM_MASTER_ID}")
 
-            strict_schema = False if params.STRICT_SCHEMA_VALIDATION not in kwargs else kwargs.get(
-                params.STRICT_SCHEMA_VALIDATION)
-
-            # lazy load the _schema and validator if it's not been loaded, if the requestor has asked for strict _schema
-            # checking, or if we've hit the validation refresh hit count
-            if not self._schema_loaded or strict_schema or self._schema_validation_refresh_hitcount == 0 or (
-                    self._schema_validation_refresh_hitcount is not None and self._schema_dependent_hit_count % self._schema_validation_refresh_hitcount == 0):
-                log.info(f"Reloading Schema Reference from API Metadata. Strict Validation: {strict_schema}")
-                self._refresh_schema()
-
-            # if there is a _schema for this API, then validate the object
-            if self._schema is not None:
-                try:
-                    self._schema_validator(item)
-                except Exception as e:
-                    raise InvalidArgumentsException(e)
-
             # remove id from the item so we can use the item to generate the AttributeUpdates parameter
             del item[self._pk_name]
-
-            self._schema_dependent_hit_count += 1
 
             item_version = kwargs.get(params.ITEM_VERSION)
 
