@@ -25,7 +25,6 @@
       "security_group_ids": {{{sgs}}},
       "environment_variables": {
         "STAGE": "{{stage_name}}",
-        "SCHEMA_VALIDATION_REFRESH_HITCOUNT": "{{refresh_schema_hits}}",
         "LOG_LEVEL": "{{log_level}}"
         {{#use_auth}}
         ,"SYSTEM_AUTHORIZER": "{{auth}}"
