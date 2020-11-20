@@ -65,9 +65,12 @@ class DataAPIStorageHandler:
     def __init__(self, table_name, primary_key_attribute, region, delete_mode, allow_runtime_delete_mode_change,
                  table_indexes, metadata_indexes, schema_validation_refresh_hitcount, crawler_rolename,
                  catalog_database, allow_non_itemmaster_writes, strict_occv, deployed_account,
-                 pitr_enabled=None, kms_key_arn=None):
+                 pitr_enabled=None, kms_key_arn=None, logger=None):
         # setup class logger
-        self._logger = utils.setup_logging()
+        if logger is None:
+            self._logger = utils.setup_logging()
+        else:
+            self._logger = logger
 
         global log
         log = self._logger

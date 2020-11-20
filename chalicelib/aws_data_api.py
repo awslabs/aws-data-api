@@ -171,14 +171,9 @@ class AwsDataAPI:
         self._table_name = kwargs.get(params.STORAGE_TABLE)
 
         # setup instance logger
-        logging.basicConfig()
-        self._logger = logging.getLogger(params.AWS_DATA_API_NAME)
-        self._logger.setLevel(logging.INFO)
+        self._logger = utils.setup_logging(params.AWS_DATA_API_NAME)
         global log
         log = self._logger
-        log_level = os.getenv(params.LOG_LEVEL_PARAM)
-        if log_level is not None:
-            log.setLevel(log_level.upper())
 
         # create the API metadata handler
         self._api_metadata_handler = ApiMetadata(self._region, self._logger, kwargs.get(params.KMS_KEY_ARN))
@@ -206,20 +201,20 @@ class AwsDataAPI:
         self._catalog_database = kwargs.get(params.CATALOG_DATABASE, params.DEFAULT_CATALOG_DATABASE)
 
         # setup the storage handler which implements the backend data api functionality
-        self._storage_handler = self._get_storage_handler(self._table_name,
-                                                          self._pk_name,
-                                                          self._region,
-                                                          self._delete_mode,
-                                                          self._allow_runtime_delete_mode_change,
-                                                          self._table_indexes,
-                                                          self._metadata_indexes,
-                                                          self._schema_validation_refresh_hitcount,
-                                                          self._crawler_rolename,
-                                                          self._catalog_database,
-                                                          self._allow_non_itemmaster_writes,
-                                                          self._strict_occv,
-                                                          kwargs.get(params.DEPLOYED_ACCOUNT, None),
-                                                          kwargs[params.STORAGE_HANDLER],
+        self._storage_handler = self._get_storage_handler(table_name=self._table_name,
+                                                          primary_key_attribute=self._pk_name,
+                                                          region=self._region,
+                                                          delete_mode=self._delete_mode,
+                                                          allow_runtime_delete_mode_change=self._allow_runtime_delete_mode_change,
+                                                          table_indexes=self._table_indexes,
+                                                          metadata_indexes=self._metadata_indexes,
+                                                          schema_validation_refresh_hitcount=self._schema_validation_refresh_hitcount,
+                                                          crawler_rolename=self._crawler_rolename,
+                                                          catalog_database=self._catalog_database,
+                                                          allow_non_itemmaster_writes=self._allow_non_itemmaster_writes,
+                                                          strict_occv=self._strict_occv,
+                                                          deployed_account=kwargs.get(params.DEPLOYED_ACCOUNT, None),
+                                                          handler_name=kwargs[params.STORAGE_HANDLER],
                                                           pitr_enabled=bool(kwargs.get(params.PITR_ENABLED,
                                                                                        params.DEFAULT_PITR_ENABLED)),
                                                           kms_key_arn=kwargs.get(params.STORAGE_CRYPTO_KEY_ARN, None))
