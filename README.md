@@ -26,7 +26,7 @@ Data API Features include:
 * __Data Graph__
 	* You can supply a Gremlin endpoint, which enables arbitrary ‘References’ graphs which support data lineage tracking and any other type of data connections customers wish to make
 
-Please click [here](../../wiki) for full Documentation.
+## Please click [here](../../wiki) for full Documentation.
 
 ### FAQ
 
